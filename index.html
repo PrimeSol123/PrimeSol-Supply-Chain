@@ -5,40 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>臻方供应链管理系统</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+
     <style>
-        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #165DFF; z-index: 99999; display: flex; align-items: center; justify-content: center; }
-        .login-box { background: white; padding: 40px; border-radius: 12px; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .login-box h2 { text-align: center; margin-bottom: 24px; color: #165DFF; }
-        .login-input { width: 100%; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
-        .login-btn { width: 100%; padding: 12px; background: #165DFF; color: white; border: none; border-radius: 6px; font-size: 16px; cursor:pointer; }
-        .error { color: red; text-align: center; margin-bottom: 12px; display: none; }
-        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center; }
-        .modal { background:white; width:90%; max-width:1000px; border-radius:12px; max-height:90vh; overflow:auto; }
-        .modal-header { padding:16px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
-        .modal-close { background:none; border:none; font-size:24px; cursor:pointer; }
-        .modal-body { padding:20px; }
-        .modal-footer { padding:16px 20px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px; }
-        .form-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-        .form-group { margin-bottom:12px; }
-        .form-label { display:block; margin-bottom:6px; font-size:14px; color:#333; }
-        .form-control { width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; box-sizing:border-box; }
-        .btn { padding:10px 16px; border-radius:6px; cursor:pointer; border:none; }
-        .btn-primary { background:#165DFF; color:white; }
-        .btn-outline { border:1px solid #ddd; background:white; }
-        .section-bar { margin:16px 0 8px; font-weight:bold; color:#165DFF; }
-        .item-row { display:flex; gap:10px; padding:8px; background:#f7f8fa; border-radius:6px; margin:4px 0; }
-        .item-row button { background:none; border:none; color:red; cursor:pointer; }
-        #mainContainer { display:none; }
-        .header { display:flex; justify-content:space-between; padding:16px 20px; background:white; box-shadow:0 2px 4px #00000010; }
-        .filter-section { display:flex; gap:10px; padding:16px 20px; flex-wrap:wrap; }
-        .table-container { padding:20px; }
-        .table-header { display:flex; justify-content:space-between; margin-bottom:12px; }
-        table { width:100%; border-collapse:collapse; }
-        th,td { padding:10px; border:1px solid #eee; text-align:center; font-size:14px; }
-        th { background:#f7f8fa; }
-        .detail-btn { color:#165DFF; cursor:pointer; }
-        .action-buttons { display:flex; gap:6px; justify-content:center; }
-        .action-btn { padding:4px 8px; font-size:12px; cursor:pointer; border:none; border-radius:4px; }
+        .login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #165DFF; z-index: 99999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-box {
+            background: white; padding: 40px; border-radius: 12px;
+            max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .login-box h2 {
+            text-align: center; margin-bottom: 24px; color: #165DFF;
+        }
+        .login-input {
+            width: 100%; padding: 12px 16px; margin-bottom: 16px;
+            border: 1px solid #ddd; border-radius: 6px; font-size: 16px;
+        }
+        .login-btn {
+            width: 100%; padding: 12px; background: #165DFF; color: white;
+            border: none; border-radius: 6px; font-size: 16px; cursor: pointer;
+        }
+        .error {
+            color: red; text-align: center; margin-bottom: 12px; display: none;
+        }
+        /* 应付子项和轨迹记录容器样式 */
+        #pay-items-container, #tracking-records-container {
+            margin-top: 8px;
+            padding: 8px;
+            background: #f5f7fa;
+            border-radius: 6px;
+            min-height: 40px;
+        }
+        .pay-item-row, .tracking-record-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+            padding: 6px;
+            background: white;
+            border-radius: 4px;
+        }
+        .pay-item-row input, .tracking-record-row input {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .pay-item-row button, .tracking-record-row button {
+            padding: 6px 10px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -46,125 +69,246 @@
 <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
         <h2>臻方供应链管理系统</h2>
-        <div class="error" id="errorTip">密码错误</div>
-        <input type="password" id="passwordInput" class="login-input" placeholder="输入密码">
-        <button class="login-btn" onclick="checkPassword()">登录</button>
+        <div class="error" id="errorTip">密码错误，请重新输入</div>
+        <input type="password" class="login-input" id="passwordInput" placeholder="请输入访问密码">
+        <button class="login-btn" onclick="checkPassword()">登录进入系统</button>
     </div>
 </div>
 
-<div id="mainContainer">
-    <div class="header">
-        <h2>臻方供应链管理系统</h2>
-    </div>
-
-    <div class="filter-section">
-        <button class="btn btn-outline" id="export-btn">导出</button>
-        <button class="btn btn-primary" id="add-btn">添加订单</button>
-    </div>
-
-    <div class="table-container">
-        <div class="table-header">
-            <h3>订单列表</h3>
-            <span id="record-count">(共0条)</span>
+<div id="mainContainer" style="display:none;">
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo-icon"><i class="fas fa-box-archive"></i></div>
+            <div class="logo-text">臻方供应链管理系统</div>
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>序号</th>
-                    <th>客户</th>
-                    <th>单号</th>
-                    <th>国家</th>
-                    <th>收货人</th>
-                    <th>应付</th>
-                    <th>利润</th>
-                    <th>轨迹</th>
-                    <th>状态</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="order-tbody"></tbody>
-        </table>
-    </div>
+        <div class="user-section">
+            <div class="notifications"><i class="fas fa-bell"></i><span class="notifications-badge">3</span></div>
+            <div class="user-avatar">AD</div>
+        </div>
+    </header>
+    
+    <section class="filter-section">
+        <div class="form-group" style="flex:3;">
+            <label class="form-label" for="search">全局搜索</label>
+            <input type="text" id="search" class="form-control" placeholder="输入单号/客户/国家等关键词...">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="country">国家筛选</label>
+            <select id="country" class="form-control">
+                <option value="">所有国家</option>
+                <option value="以色列">以色列</option>
+                <option value="葡萄牙">葡萄牙</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="transport">运输方式</label>
+            <select id="transport" class="form-control">
+                <option value="">所有方式</option>
+                <option value="快递">快递</option>
+                <option value="空派">空派</option>
+                <option value="海运">海运</option>
+                <option value="其他">其他</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="status">订单状态</label>
+            <select id="status" class="form-control">
+                <option value="">所有状态</option>
+                <option value="pending">待发货</option>
+                <option value="shipped">已发货</option>
+                <option value="waiting-pickup">待提货</option>
+                <option value="signed">已签收</option>
+                <option value="inquiry">询价中</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:0.75rem;">
+            <button class="btn btn-primary" id="search-btn"><i class="fas fa-search"></i> 搜索</button>
+            <button class="btn btn-outline" id="reset-btn"><i class="fas fa-sync-alt"></i> 重置</button>
+        </div>
+    </section>
+    
+    <section class="table-container">
+        <div class="table-header">
+            <div class="table-title"><i class="fas fa-list-alt"></i> 发货通知列表 <span id="record-count" style="color:var(--primary);font-weight:500;font-size:0.875rem;">(共3条记录)</span></div>
+            <div class="table-actions">
+                <button class="btn btn-outline" id="export-btn"><i class="fas fa-download"></i> 导出数据</button>
+                <button class="btn btn-success" id="add-btn"><i class="fas fa-plus"></i> 添加订单</button>
+            </div>
+        </div>
+        
+        <div class="table-wrapper">
+            <table id="order-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all"></th>
+                        <th>序号</th>
+                        <th>入仓日期</th>
+                        <th>客户名称</th>
+                        <th>客户单号</th>
+                        <th>商品名称</th>
+                        <th>货物描述</th>
+                        <th>货品件数</th>
+                        <th>货品重量</th>
+                        <th>国家</th>
+                        <th>收货人信息</th>
+                        <th>申报价值</th>
+                        <th>运输方式</th>
+                        <th>供应链名称</th>
+                        <th>发货渠道</th>
+                        <th>出仓日期</th>
+                        <th>应付(RMB)</th>
+                        <th>成本备注</th>
+                        <th>客户付款(RMB)</th>
+                        <th>报价明细</th>
+                        <th>利润(RMB)</th>
+                        <th>转单号</th>
+                        <th>最新轨迹</th>
+                        <th>是否报关</th>
+                        <th>客服备注</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="order-tbody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="pagination">
+            <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    </section>
+    
+    <footer class="footer">© 2026 臻方供应链管理系统 | 版本号: v2.0.0</footer>
 </div>
 
 <div class="modal-overlay" id="order-modal">
     <div class="modal">
         <div class="modal-header">
-            <h3 id="modal-title">添加订单</h3>
+            <h3 class="modal-title" id="modal-title">编辑订单</h3>
             <button class="modal-close" id="modal-close">&times;</button>
         </div>
         <div class="modal-body">
             <form id="order-form">
+                <input type="hidden" id="edit-row-index" value="-1">
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">客户名称</label>
-                        <input class="form-control" id="form-customer">
+                        <input type="text" id="form-customer" class="form-control" required placeholder="例如：Moshe">
                     </div>
                     <div class="form-group">
                         <label class="form-label">客户单号</label>
-                        <input class="form-control" id="form-order-id">
+                        <input type="text" id="form-order-id" class="form-control" required placeholder="例如：IL2026030901">
                     </div>
                     <div class="form-group">
                         <label class="form-label">入仓日期</label>
-                        <input type="date" class="form-control" id="form-warehouse-in">
+                        <input type="date" id="form-warehouse-in" class="form-control" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">商品名称</label>
-                        <input class="form-control" id="form-product-name">
+                        <input type="text" id="form-product-name" class="form-control" placeholder="例如：折叠椅">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">货物描述</label>
+                        <input type="text" id="form-goods" class="form-control" placeholder="例如：户外折叠椅">
                     </div>
                     <div class="form-group">
                         <label class="form-label">货品件数</label>
-                        <input type="number" class="form-control" id="form-quantity">
+                        <input type="number" id="form-quantity" class="form-control" placeholder="例如：10">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">重量</label>
-                        <input class="form-control" id="form-weight">
+                        <label class="form-label">货品重量</label>
+                        <input type="text" id="form-weight" class="form-control" placeholder="例如：25.5kg">
                     </div>
                     <div class="form-group">
                         <label class="form-label">国家</label>
-                        <input class="form-control" id="form-country">
+                        <input type="text" id="form-country" class="form-control" required placeholder="例如：以色列、葡萄牙">
                     </div>
                     <div class="form-group">
                         <label class="form-label">收货人信息</label>
-                        <input class="form-control" id="form-receiver">
+                        <input type="text" id="form-receiver" class="form-control" placeholder="例如：Moshe +972501234567">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">申报价值</label>
+                        <input type="text" id="form-declare-value" class="form-control" placeholder="例如：500.00 USD">
                     </div>
                     <div class="form-group">
                         <label class="form-label">运输方式</label>
-                        <select class="form-control" id="form-transport">
-                            <option>快递</option><option>空派</option><option>海运</option>
+                        <select id="form-transport" class="form-control" required>
+                            <option value="快递">快递</option>
+                            <option value="空派">空派</option>
+                            <option value="海运">海运</option>
+                            <option value="其他">其他</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">应付金额</label>
-                        <input type="number" class="form-control" id="form-payable">
+                        <label class="form-label">供应链名称</label>
+                        <input type="text" id="form-supply-chain" class="form-control" placeholder="例如：加时特">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">客户付款</label>
-                        <input type="number" class="form-control" id="form-customer-pay">
+                        <label class="form-label">发货渠道</label>
+                        <input type="text" id="form-channel" class="form-control" placeholder="例如：快递专线、空派专线">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">利润</label>
-                        <input class="form-control" id="form-profit" readonly>
+                        <label class="form-label">出仓日期</label>
+                        <input type="date" id="form-warehouse-out" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">应付(RMB)</label>
+                        <input type="number" step="0.01" id="form-payable" class="form-control" placeholder="例如：799.00">
+                        <button type="button" class="btn btn-outline add-pay-item-btn" id="add-pay-item" style="margin-top: 8px;">+ 新增应付子项</button>
+                        <div id="pay-items-container"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">成本备注</label>
+                        <input type="text" id="form-cost-remark" class="form-control" placeholder="例如：物流成本+包装费">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">客户付款(RMB)</label>
+                        <input type="number" step="0.01" id="form-customer-pay" class="form-control" placeholder="例如：1130.30">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">报价明细</label>
+                        <input type="text" id="form-quote-detail" class="form-control" placeholder="例如：基础运费+燃油附加费">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">利润(RMB)</label>
+                        <input type="number" step="0.01" id="form-profit" class="form-control" readonly placeholder="自动计算">
                     </div>
                     <div class="form-group">
                         <label class="form-label">转单号</label>
-                        <input class="form-control" id="form-tracking-no">
+                        <input type="text" id="form-tracking-no" class="form-control" placeholder="例如：3708875402">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">最新轨迹</label>
+                        <input type="text" id="form-tracking-status" class="form-control" placeholder="例如：已到达目的国">
+                        <button type="button" class="btn btn-outline add-tracking-btn" id="add-tracking-record" style="margin-top: 8px;">+ 新增轨迹记录</button>
+                        <div id="tracking-records-container"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">是否报关</label>
+                        <select id="form-customs" class="form-control">
+                            <option value="是">是</option>
+                            <option value="否">否</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column: span 3;">
+                        <label class="form-label">客服备注</label>
+                        <textarea id="form-remark" class="form-control" rows="4" placeholder="例如：客户要求加急发货"></textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-label">状态</label>
-                        <select class="form-control" id="form-status">
-                            <option>待发货</option><option>已发货</option><option>已签收</option>
+                        <select id="form-status" class="form-control" required>
+                            <option value="待发货">待发货</option>
+                            <option value="已发货">已发货</option>
+                            <option value="待提货">待提货</option>
+                            <option value="已签收">已签收</option>
+                            <option value="询价中">询价中</option>
                         </select>
                     </div>
                 </div>
-
-                <div class="section-bar">应付子项</div>
-                <button type="button" id="add-pay-item" class="btn btn-outline">+ 添加应付子项</button>
-                <div id="pay-items-container" style="margin-top:8px;"></div>
-
-                <div class="section-bar">物流轨迹</div>
-                <button type="button" id="add-tracking-record" class="btn btn-outline">+ 添加轨迹记录</button>
-                <div id="tracking-records-container" style="margin-top:8px;"></div>
             </form>
         </div>
         <div class="modal-footer">
@@ -177,18 +321,19 @@
 <script>
 const CORRECT_PASSWORD = "123456";
 function checkPassword() {
-    let v = document.getElementById("passwordInput").value;
-    if (v === CORRECT_PASSWORD) {
+    let input = document.getElementById("passwordInput").value;
+    if (input === CORRECT_PASSWORD) {
         document.getElementById("loginOverlay").remove();
         document.getElementById("mainContainer").style.display = "block";
     } else {
         document.getElementById("errorTip").style.display = "block";
     }
 }
-document.getElementById("passwordInput").addEventListener("keydown", e => {
+document.getElementById("passwordInput").addEventListener("keydown", function(e) {
     if (e.key === "Enter") checkPassword();
 });
 </script>
+
 <script src="JavaScript.js"></script>
 </body>
 </html>
