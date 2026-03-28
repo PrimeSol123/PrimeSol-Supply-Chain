@@ -1,27 +1,22 @@
-// ====================== 配置（已填好你的信息） ======================
-const GIST_ID = "e37a918b6b3e83e039b873249c9562f8";
-const GIST_TOKEN = "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";
-const GIST_FILENAME = "data.json";
-// ==================================================================
-
+// ==============================
+// 本地永久存储方案 🔥 刷新永不丢失
+// ==============================
 let orderData = [];
 let currentEditIndex = -1;
 
 // 页面加载
-document.addEventListener('DOMContentLoaded', async function () {
-  await loadAllData();
+document.addEventListener('DOMContentLoaded', function () {
+  loadFromLocal();
   renderTable();
   bindEvents();
 });
 
-// 统一加载：先读 Gist
-async function loadAllData() {
-  try {
-    let res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
-    let gist = await res.json();
-    let content = gist.files[GIST_FILENAME].content;
-    orderData = JSON.parse(content);
-  } catch (e) {
+// 从本地读取
+function loadFromLocal() {
+  let data = localStorage.getItem('supplyChainData');
+  if (data) {
+    orderData = JSON.parse(data);
+  } else {
     orderData = [
       {
         id: 1,
@@ -59,29 +54,13 @@ async function loadAllData() {
         ]
       }
     ];
+    saveToLocal();
   }
 }
 
-// 保存到 Gist（修复版，确保一定能保存成功）
-async function saveToGist() {
-  try {
-    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      method: "PATCH",
-      headers: {
-        "Authorization": "token " + GIST_TOKEN,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        files: {
-          [GIST_FILENAME]: {
-            content: JSON.stringify(orderData, null, 2)
-          }
-        }
-      })
-    });
-  } catch (err) {
-    console.error("保存失败", err);
-  }
+// 保存到本地（永久有效）
+function saveToLocal() {
+  localStorage.setItem('supplyChainData', JSON.stringify(orderData));
 }
 
 // 渲染表格
@@ -142,7 +121,7 @@ function bindEvents() {
 
   // 编辑订单
   document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.onclick = async (e) => {
+    btn.onclick = (e) => {
       const index = parseInt(e.currentTarget.dataset.index);
       currentEditIndex = index;
       const item = orderData[index];
@@ -178,18 +157,18 @@ function bindEvents() {
 
   // 删除订单
   document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.onclick = async (e) => {
+    btn.onclick = (e) => {
       if (!confirm("确定删除？")) return;
       const index = parseInt(e.currentTarget.dataset.index);
       orderData.splice(index, 1);
-      await saveToGist();
+      saveToLocal();
       renderTable();
       bindEvents();
     };
   });
 
-  // 保存（新增/编辑）
-  document.getElementById("modal-save").onclick = async () => {
+  // 保存
+  document.getElementById("modal-save").onclick = () => {
     const data = {
       warehouseIn: document.getElementById("form-warehouse-in").value,
       customer: document.getElementById("form-customer").value,
@@ -225,7 +204,7 @@ function bindEvents() {
       orderData[currentEditIndex] = { ...orderData[currentEditIndex], ...data };
     }
 
-    await saveToGist();
+    saveToLocal();
     document.getElementById("order-modal").style.display = "none";
     renderTable();
     bindEvents();
