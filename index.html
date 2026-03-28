@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臻方供应链管理系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>/* 粘贴CSS样式代码 */</style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="logo-section">
+                <div class="logo-icon"><i class="fas fa-box-archive"></i></div>
+                <div class="logo-text">臻方供应链管理系统</div>
+            </div>
+            <div class="user-section">
+                <div class="notifications"><i class="fas fa-bell"></i><span class="notifications-badge">3</span></div>
+                <div class="user-avatar">AD</div>
+            </div>
+        </header>
+        
+        <!-- 筛选区 -->
+        <section class="filter-section">
+            <div class="form-group" style="flex:3;">
+                <label class="form-label" for="search">全局搜索</label>
+                <input type="text" id="search" class="form-control" placeholder="输入单号/客户/国家等关键词...">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="country">国家筛选</label>
+                <select id="country" class="form-control">
+                    <option value="">所有国家</option>
+                    <option value="以色列">以色列</option>
+                    <option value="葡萄牙">葡萄牙</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="transport">运输方式</label>
+                <select id="transport" class="form-control">
+                    <option value="">所有方式</option>
+                    <option value="快递">快递</option>
+                    <option value="空派">空派</option>
+                    <option value="海运">海运</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="status">订单状态</label>
+                <select id="status" class="form-control">
+                    <option value="">所有状态</option>
+                    <option value="pending">待发货</option>
+                    <option value="shipped">已发货</option>
+                    <option value="waiting-pickup">待提货</option>
+                    <option value="signed">已签收</option>
+                    <option value="inquiry">询价中</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:0.75rem;">
+                <button class="btn btn-primary" id="search-btn"><i class="fas fa-search"></i> 搜索</button>
+                <button class="btn btn-outline" id="reset-btn"><i class="fas fa-sync-alt"></i> 重置</button>
+            </div>
+        </section>
+        
+        <!-- 表格区（新增成本备注、报价明细列） -->
+        <section class="table-container">
+            <div class="table-header">
+                <div class="table-title"><i class="fas fa-list-alt"></i> 发货通知列表 <span id="record-count" style="color:var(--primary);font-weight:500;font-size:0.875rem;">(共3条记录)</span></div>
+                <div class="table-actions">
+                    <button class="btn btn-outline" id="export-btn"><i class="fas fa-download"></i> 导出数据</button>
+                    <button class="btn btn-success" id="add-btn"><i class="fas fa-plus"></i> 添加订单</button>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table id="order-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all"></th>
+                            <th>序号</th>
+                            <th>入仓日期</th>
+                            <th>客户名称</th>
+                            <th>客户单号</th>
+                            <th>商品名称</th>
+                            <th>货物描述</th>
+                            <th>货品件数</th>
+                            <th>货品重量</th>
+                            <th>国家</th>
+                            <th>收货人信息</th>
+                            <th>申报价值</th>
+                            <th>运输方式</th>
+                            <th>供应链名称</th>
+                            <th>发货渠道</th>
+                            <th>出仓日期</th>
+                            <th>应付(RMB)</th>
+                            <th>成本备注</th> <!-- 新增 -->
+                            <th>客户付款(RMB)</th>
+                            <th>报价明细</th> <!-- 新增 -->
+                            <th>利润(RMB)</th>
+                            <th>转单号</th>
+                            <th>最新轨迹</th>
+                            <th>是否报关</th>
+                            <th>客服备注</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-tbody">
+                        <tr data-pay-items='[{"amount":799.00,"remark":"主货款"},{"amount":50.00,"remark":"运费"}]' 
+                            data-tracking-records='[{"time":"2026-03-17 10:30:00","content":"已到达目的国"},{"time":"2026-03-16 18:20:00","content":"已出库，运输中"}]'
+                            data-cost-remark="物流成本+包装费" data-quote-detail="基础运费+燃油附加费">
+                            <td><input type="checkbox"></td>
+                            <td>1</td>
+                            <td>2026-03-16</td>
+                            <td>Moshe</td>
+                            <td>IL2026030901</td>
+                            <td>折叠椅</td>
+                            <td>户外折叠椅</td>
+                            <td>10</td>
+                            <td>25.5kg</td>
+                            <td>以色列</td>
+                            <td>Moshe Cohen +972501234567</td>
+                            <td>500.00 USD</td>
+                            <td>快递</td>
+                            <td>加时特</td>
+                            <td>快递专线</td>
+                            <td>2026-03-17</td>
+                            <td>849.00</td>
+                            <td>物流成本+包装费</td> <!-- 成本备注 -->
+                            <td>1130.30</td>
+                            <td>基础运费+燃油附加费</td> <!-- 报价明细 -->
+                            <td>331.30</td>
+                            <td>3708875402</td>
+                            <td>已到达目的国</td>
+                            <td>是</td>
+                            <td>客户要求加急发货，注意货物包装要牢固，避免运输损坏</td>
+                            <td><span class="status-badge status-shipped">已发货</span></td>
+                            <td class="action-buttons">
+                                <button class="action-btn view-btn"><i class="fas fa-eye"></i></button>
+                                <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        <tr data-pay-items='[{"amount":26.00,"remark":"服务费"}]'
+                            data-tracking-records='[{"time":"2026-03-17 14:15:00","content":"清关中"},{"time":"2026-03-17 09:00:00","content":"已到达目的国机场"}]'
+                            data-cost-remark="清关服务费" data-quote-detail="空派特惠价">
+                            <td><input type="checkbox"></td>
+                            <td>2</td>
+                            <td>2026-03-16</td>
+                            <td>Pedro</td>
+                            <td>PT20260303246</td>
+                            <td>日用品</td>
+                            <td>杂项日用品</td>
+                            <td>5</td>
+                            <td>18.2kg</td>
+                            <td>葡萄牙</td>
+                            <td>Pedro Silva +351912345678</td>
+                            <td>200.00 USD</td>
+                            <td>空派</td>
+                            <td>EPS</td>
+                            <td>空派专线</td>
+                            <td>2026-03-17</td>
+                            <td>26.00</td>
+                            <td>清关服务费</td> <!-- 成本备注 -->
+                            <td>1482.00</td>
+                            <td>空派特惠价</td> <!-- 报价明细 -->
+                            <td>1456.00</td>
+                            <td>1Z0R6D926835462840</td>
+                            <td>清关中</td>
+                            <td>否</td>
+                            <td>无特殊要求，正常发货即可，客户希望能尽快送达</td>
+                            <td><span class="status-badge status-shipped">已发货</span></td>
+                            <td class="action-buttons">
+                                <button class="action-btn view-btn"><i class="fas fa-eye"></i></button>
+                                <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        <tr data-pay-items='[{"amount":27.00,"remark":"仓储费"},{"amount":10.00,"remark":"打包费"}]'
+                            data-tracking-records='[{"time":"2026-03-17 16:40:00","content":"运输中"},{"time":"2026-03-17 12:10:00","content":"已发货，离开仓库"}]'
+                            data-cost-remark="仓储+打包费" data-quote-detail="标准空派报价">
+                            <td><input type="checkbox"></td>
+                            <td>3</td>
+                            <td>2026-03-16</td>
+                            <td>Pedro</td>
+                            <td>SZDW26030304642</td>
+                            <td>易碎品</td>
+                            <td>陶瓷制品</td>
+                            <td>8</td>
+                            <td>30.0kg</td>
+                            <td>葡萄牙</td>
+                            <td>Pedro Santos +351987654321</td>
+                            <td>300.00 USD</td>
+                            <td>空派</td>
+                            <td>德威</td>
+                            <td>空派专线</td>
+                            <td>2026-03-17</td>
+                            <td>37.00</td>
+                            <td>仓储+打包费</td> <!-- 成本备注 -->
+                            <td>1782.00</td>
+                            <td>标准空派报价</td> <!-- 报价明细 -->
+                            <td>1755.00</td>
+                            <td>889318897468</td>
+                            <td>运输中</td>
+                            <td>是</td>
+                            <td>注意易碎品，包装时需要添加缓冲材料，避免破损</td>
+                            <td><span class="status-badge status-shipped">已发货</span></td>
+                            <td class="action-buttons">
+                                <button class="action-btn view-btn"><i class="fas fa-eye"></i></button>
+                                <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="pagination">
+                <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+        
+        <!-- 页脚 -->
+        <footer class="footer">© 2026 臻方供应链管理系统 | 版本号: v2.0.0</footer>
+    </div>
+
+    <!-- 模态框：添加/编辑订单（新增成本备注、报价明细输入框） -->
+    <div class="modal-overlay" id="order-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">编辑订单</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="order-form">
+                    <input type="hidden" id="edit-row-index" value="-1">
+                    <div class="form-grid">
+                        <!-- 基础信息 -->
+                        <div class="form-group">
+                            <label class="form-label">客户名称</label>
+                            <input type="text" id="form-customer" class="form-control" required placeholder="例如：Moshe">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">客户单号</label>
+                            <input type="text" id="form-order-id" class="form-control" required placeholder="例如：IL2026030901">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">入仓日期</label>
+                            <input type="date" id="form-warehouse-in" class="form-control" required>
+                        </div>
+                        <!-- 商品信息 -->
+                        <div class="form-group">
+                            <label class="form-label">商品名称</label>
+                            <input type="text" id="form-product-name" class="form-control" placeholder="例如：折叠椅">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">货物描述</label>
+                            <input type="text" id="form-goods" class="form-control" placeholder="例如：户外折叠椅">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">货品件数</label>
+                            <input type="number" id="form-quantity" class="form-control" placeholder="例如：10">
+                        </div>
+                        <!-- 收货信息 -->
+                        <div class="form-group">
+                            <label class="form-label">货品重量</label>
+                            <input type="text" id="form-weight" class="form-control" placeholder="例如：25.5kg">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">国家</label>
+                            <input type="text" id="form-country" class="form-control" required placeholder="例如：以色列、葡萄牙">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">收货人信息</label>
+                            <input type="text" id="form-receiver" class="form-control" placeholder="例如：Moshe +972501234567">
+                        </div>
+                        <!-- 物流信息 -->
+                        <div class="form-group">
+                            <label class="form-label">申报价值</label>
+                            <input type="text" id="form-declare-value" class="form-control" placeholder="例如：500.00 USD">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">运输方式</label>
+                            <select id="form-transport" class="form-control" required>
+                                <option value="快递">快递</option>
+                                <option value="空派">空派</option>
+                                <option value="海运">海运</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">供应链名称</label>
+                            <input type="text" id="form-supply-chain" class="form-control" placeholder="例如：加时特">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">发货渠道</label>
+                            <input type="text" id="form-channel" class="form-control" placeholder="例如：快递专线、空派专线">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">出仓日期</label>
+                            <input type="date" id="form-warehouse-out" class="form-control">
+                        </div>
+                        <!-- 财务信息（新增成本备注、报价明细） -->
+                        <div class="form-group">
+                            <label class="form-label">应付(RMB)</label>
+                            <input type="number" step="0.01" id="form-payable" class="form-control" placeholder="例如：799.00">
+                            <button type="button" class="btn btn-outline add-pay-item-btn" id="add-pay-item" style="margin-top: 8px;">+ 新增应付子项</button>
+                            <div id="pay-items-container" style="margin-top: 10px; min-height: 40px;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">成本备注</label> <!-- 新增 -->
+                            <input type="text" id="form-cost-remark" class="form-control" placeholder="例如：物流成本+包装费">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">客户付款(RMB)</label>
+                            <input type="number" step="0.01" id="form-customer-pay" class="form-control" placeholder="例如：1130.30">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">报价明细</label> <!-- 新增 -->
+                            <input type="text" id="form-quote-detail" class="form-control" placeholder="例如：基础运费+燃油附加费">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">利润(RMB)</label>
+                            <input type="number" step="0.01" id="form-profit" class="form-control" readonly placeholder="自动计算：客户付款 - 应付">
+                        </div>
+                        <!-- 其他信息 -->
+                        <div class="form-group">
+                            <label class="form-label">转单号</label>
+                            <input type="text" id="form-tracking-no" class="form-control" placeholder="例如：3708875402">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">最新轨迹</label>
+                            <input type="text" id="form-tracking-status" class="form-control" placeholder="例如：已到达目的国">
+                            <button type="button" class="btn btn-outline add-tracking-btn" id="add-tracking-record" style="margin-top: 8px;">+ 新增轨迹记录</button>
+                            <div id="tracking-records-container" class="tracking-records-container"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">是否报关</label>
+                            <select id="form-customs" class="form-control">
+                                <option value="是">是</option>
+                                <option value="否">否</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 3;">
+                            <label class="form-label">客服备注</label>
+                            <textarea id="form-remark" class="form-control" rows="4" placeholder="例如：客户要求加急发货"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">状态</label>
+                            <select id="form-status" class="form-control" required>
+                                <option value="待发货">待发货</option>
+                                <option value="已发货">已发货</option>
+                                <option value="待提货">待提货</option>
+                                <option value="已签收">已签收</option>
+                                <option value="询价中">询价中</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="modal-cancel">取消</button>
+                <button class="btn btn-primary" id="modal-save">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情弹窗：收货人/备注/成本备注/报价明细 -->
+    <div class="modal-overlay-detail" id="detail-modal">
+        <div class="modal-detail">
+            <div class="modal-detail-header">
+                <h3 class="modal-detail-title" id="detail-title">收货人信息</h3>
+                <button class="modal-detail-close" id="detail-close">&times;</button>
+            </div>
+            <div class="modal-detail-body" id="detail-content"></div>
+        </div>
+    </div>
+
+    <!-- 应付金额详情弹窗 -->
+    <div class="modal-overlay" id="pay-detail-modal">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 class="modal-title">应付金额详情</h3>
+                <button class="modal-close" id="pay-detail-close">&times;</button>
+            </div>
+            <div class="modal-body" id="pay-detail-content">
+                <!-- 动态填充 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="pay-detail-cancel">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 轨迹详情弹窗 -->
+    <div class="modal-overlay" id="tracking-detail-modal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title">轨迹记录详情</h3>
+                <button class="modal-close" id="tracking-detail-close">&times;</button>
+            </div>
+            <div class="modal-body" id="tracking-detail-content">
+                <!-- 动态填充轨迹记录 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="tracking-detail-cancel">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>/* 粘贴下面的JS代码 */</script>
+</body>
+</html>
