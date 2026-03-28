@@ -59,7 +59,13 @@ function saveToLocal() {
   localStorage.setItem('supplyChainData', JSON.stringify(orderData));
 }
 
-// 渲染表格
+// 截断显示前5个字符，超出加...
+function truncateText(text) {
+  if (!text) return '';
+  return text.length > 5 ? text.substring(0, 5) + '...' : text;
+}
+
+// 渲染表格（所有弹窗字段只显示前5字符）
 function renderTable() {
   const tbody = document.getElementById('order-tbody');
   tbody.innerHTML = '';
@@ -76,21 +82,27 @@ function renderTable() {
       <td>${item.quantity}</td>
       <td>${item.weight}</td>
       <td>${item.country}</td>
-      <td><span class="detail-link" data-type="receiver" data-index="${index}">${item.receiver}</span></td>
+      <!-- 收货人：只显示前5字符，点击弹窗 -->
+      <td><span class="detail-link" data-type="receiver" data-index="${index}">${truncateText(item.receiver)}</span></td>
       <td>${item.declareValue}</td>
       <td>${item.transport}</td>
       <td>${item.supplyChain}</td>
       <td>${item.channel}</td>
       <td>${item.warehouseOut}</td>
-      <td><span class="detail-link" data-type="pay" data-index="${index}">${item.payable.toFixed(2)}</span></td>
-      <td><span class="detail-link" data-type="cost" data-index="${index}">${item.costRemark}</span></td>
+      <!-- 应付金额：只显示前5字符，点击弹窗 -->
+      <td><span class="detail-link" data-type="pay" data-index="${index}">${truncateText(item.payable.toFixed(2))}</span></td>
+      <!-- 成本备注：只显示前5字符，点击弹窗 -->
+      <td><span class="detail-link" data-type="cost" data-index="${index}">${truncateText(item.costRemark)}</span></td>
       <td>${item.customerPay.toFixed(2)}</td>
-      <td><span class="detail-link" data-type="quote" data-index="${index}">${item.quoteDetail}</span></td>
+      <!-- 报价明细：只显示前5字符，点击弹窗 -->
+      <td><span class="detail-link" data-type="quote" data-index="${index}">${truncateText(item.quoteDetail)}</span></td>
       <td>${item.profit.toFixed(2)}</td>
       <td>${item.trackingNo}</td>
-      <td><span class="detail-link" data-type="tracking" data-index="${index}">${item.trackingStatus}</span></td>
+      <!-- 物流状态：只显示前5字符，点击弹窗 -->
+      <td><span class="detail-link" data-type="tracking" data-index="${index}">${truncateText(item.trackingStatus)}</span></td>
       <td>${item.customs}</td>
-      <td><span class="detail-link" data-type="remark" data-index="${index}">${item.remark?.substring(0, 12)}...</span></td>
+      <!-- 备注：只显示前5字符，点击弹窗 -->
+      <td><span class="detail-link" data-type="remark" data-index="${index}">${truncateText(item.remark)}</span></td>
       <td><span class="status-badge status-${item.status === '已发货' ? 'shipped' : item.status}">${item.status}</span></td>
       <td class="action-buttons">
         <button class="action-btn view-btn" data-index="${index}"><i class="fas fa-eye"></i></button>
@@ -298,7 +310,7 @@ function bindEvents() {
     renderTempTrackingRecords();
   };
 
-  // 详情弹窗（收货人/轨迹/备注等）
+  // 详情弹窗（点击显示完整内容）
   document.querySelectorAll('.detail-link').forEach(el => {
     el.onclick = function () {
       const idx = +this.dataset.index;
