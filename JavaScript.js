@@ -1,7 +1,7 @@
 let orderData = [];
 let currentEditIndex = -1;
-let tempPayItems = []; // 应付子项临时数据
-let tempTrackingRecords = []; // 轨迹记录临时数据
+let tempPayItems = [];
+let tempTrackingRecords = [];
 
 document.addEventListener('DOMContentLoaded', function () {
   loadFromLocal();
@@ -59,13 +59,13 @@ function saveToLocal() {
   localStorage.setItem('supplyChainData', JSON.stringify(orderData));
 }
 
-// 截断显示前5个字符，超出加...
+// 截断显示前5个字符
 function truncateText(text) {
   if (!text) return '';
   return text.length > 5 ? text.substring(0, 5) + '...' : text;
 }
 
-// 渲染表格（所有弹窗字段只显示前5字符）
+// 渲染表格
 function renderTable() {
   const tbody = document.getElementById('order-tbody');
   tbody.innerHTML = '';
@@ -82,26 +82,20 @@ function renderTable() {
       <td>${item.quantity}</td>
       <td>${item.weight}</td>
       <td>${item.country}</td>
-      <!-- 收货人：只显示前5字符，点击弹窗 -->
       <td><span class="detail-link" data-type="receiver" data-index="${index}">${truncateText(item.receiver)}</span></td>
       <td>${item.declareValue}</td>
       <td>${item.transport}</td>
       <td>${item.supplyChain}</td>
       <td>${item.channel}</td>
       <td>${item.warehouseOut}</td>
-      <!-- 应付金额：只显示前5字符，点击弹窗 -->
       <td><span class="detail-link" data-type="pay" data-index="${index}">${truncateText(item.payable.toFixed(2))}</span></td>
-      <!-- 成本备注：只显示前5字符，点击弹窗 -->
       <td><span class="detail-link" data-type="cost" data-index="${index}">${truncateText(item.costRemark)}</span></td>
       <td>${item.customerPay.toFixed(2)}</td>
-      <!-- 报价明细：只显示前5字符，点击弹窗 -->
       <td><span class="detail-link" data-type="quote" data-index="${index}">${truncateText(item.quoteDetail)}</span></td>
       <td>${item.profit.toFixed(2)}</td>
       <td>${item.trackingNo}</td>
-      <!-- 物流状态：只显示前5字符，点击弹窗 -->
       <td><span class="detail-link" data-type="tracking" data-index="${index}">${truncateText(item.trackingStatus)}</span></td>
       <td>${item.customs}</td>
-      <!-- 备注：只显示前5字符，点击弹窗 -->
       <td><span class="detail-link" data-type="remark" data-index="${index}">${truncateText(item.remark)}</span></td>
       <td><span class="status-badge status-${item.status === '已发货' ? 'shipped' : item.status}">${item.status}</span></td>
       <td class="action-buttons">
@@ -115,8 +109,13 @@ function renderTable() {
   document.getElementById('record-count').textContent = `(共${orderData.length}条记录)`;
 }
 
-// 绑定所有事件
+// 绑定所有事件（修复：每次渲染后重新绑定）
 function bindEvents() {
+  // 先解绑旧事件，避免重复绑定
+  document.querySelectorAll('.edit-btn, .delete-btn, .view-btn, .detail-link').forEach(el => {
+    el.replaceWith(el.cloneNode(true));
+  });
+
   // 新增订单
   document.getElementById('add-btn').onclick = () => {
     currentEditIndex = -1;
@@ -129,7 +128,7 @@ function bindEvents() {
     document.getElementById('order-modal').style.display = 'flex';
   };
 
-  // 编辑订单
+  // 编辑订单（修复：重新绑定）
   document.querySelectorAll('.edit-btn').forEach(btn => {
     btn.onclick = e => {
       const index = +e.currentTarget.dataset.index;
@@ -163,7 +162,6 @@ function bindEvents() {
       document.getElementById('form-customs').value = item.customs;
       document.getElementById('form-remark').value = item.remark;
       document.getElementById('form-status').value = item.status;
-      // 渲染临时子项
       renderTempPayItems();
       renderTempTrackingRecords();
       document.getElementById('order-modal').style.display = 'flex';
@@ -182,7 +180,7 @@ function bindEvents() {
     };
   });
 
-  // 查看详情（完整弹窗）
+  // 查看详情
   document.querySelectorAll('.view-btn').forEach(btn => {
     btn.onclick = e => {
       const index = +e.currentTarget.dataset.index;
@@ -221,7 +219,7 @@ function bindEvents() {
     };
   });
 
-  // 保存订单（含子项+轨迹）
+  // 保存订单
   document.getElementById('modal-save').onclick = () => {
     const formData = {
       warehouseIn: document.getElementById('form-warehouse-in').value,
@@ -276,7 +274,7 @@ function bindEvents() {
     document.getElementById('form-profit').value = (income - cost).toFixed(2);
   };
 
-  // 应付子项：添加
+  // 应付子项
   document.getElementById('add-pay-item').onclick = () => {
     const amount = +document.getElementById('pay-amount').value;
     const remark = document.getElementById('pay-remark').value;
@@ -287,13 +285,12 @@ function bindEvents() {
     renderTempPayItems();
   };
 
-  // 应付子项：删除
   window.deletePayItem = (idx) => {
     tempPayItems.splice(idx, 1);
     renderTempPayItems();
   };
 
-  // 轨迹记录：添加
+  // 轨迹记录
   document.getElementById('add-tracking-record').onclick = () => {
     const time = document.getElementById('tracking-time').value;
     const content = document.getElementById('tracking-content').value;
@@ -304,13 +301,12 @@ function bindEvents() {
     renderTempTrackingRecords();
   };
 
-  // 轨迹记录：删除
   window.deleteTrackingRecord = (idx) => {
     tempTrackingRecords.splice(idx, 1);
     renderTempTrackingRecords();
   };
 
-  // 详情弹窗（点击显示完整内容）
+  // 详情弹窗
   document.querySelectorAll('.detail-link').forEach(el => {
     el.onclick = function () {
       const idx = +this.dataset.index;
