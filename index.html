@@ -5,12 +5,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>臻方供应链管理系统</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- 修正：引用仓库内的 style.css 文件（替代原有内嵌样式） -->
     <link rel="stylesheet" href="style.css">
+
+    <!-- 密码登录样式 -->
+    <style>
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #165DFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .login-box h2 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #165DFF;
+        }
+        .login-input {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #165DFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .login-btn:hover {
+            background: #0E4BD8;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            margin-bottom: 12px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <!-- 头部 -->
+
+    <!-- 密码登录界面 -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>臻方供应链管理系统</h2>
+            <div class="error" id="errorTip">密码错误，请重新输入</div>
+            <input type="password" class="login-input" id="passwordInput" placeholder="请输入访问密码" autocomplete="off">
+            <button class="login-btn" onclick="checkPassword()">登录进入系统</button>
+        </div>
+    </div>
+
+    <!-- 主系统界面（默认隐藏） -->
+    <div class="container" style="display:none;" id="mainContainer">
         <header class="header">
             <div class="logo-section">
                 <div class="logo-icon"><i class="fas fa-box-archive"></i></div>
@@ -22,7 +88,6 @@
             </div>
         </header>
         
-        <!-- 筛选区 -->
         <section class="filter-section">
             <div class="form-group" style="flex:3;">
                 <label class="form-label" for="search">全局搜索</label>
@@ -63,7 +128,6 @@
             </div>
         </section>
         
-        <!-- 表格区（新增成本备注、报价明细列） -->
         <section class="table-container">
             <div class="table-header">
                 <div class="table-title"><i class="fas fa-list-alt"></i> 发货通知列表 <span id="record-count" style="color:var(--primary);font-weight:500;font-size:0.875rem;">(共3条记录)</span></div>
@@ -94,9 +158,9 @@
                             <th>发货渠道</th>
                             <th>出仓日期</th>
                             <th>应付(RMB)</th>
-                            <th>成本备注</th> <!-- 新增 -->
+                            <th>成本备注</th>
                             <th>客户付款(RMB)</th>
-                            <th>报价明细</th> <!-- 新增 -->
+                            <th>报价明细</th>
                             <th>利润(RMB)</th>
                             <th>转单号</th>
                             <th>最新轨迹</th>
@@ -127,9 +191,9 @@
                             <td>快递专线</td>
                             <td>2026-03-17</td>
                             <td>849.00</td>
-                            <td>物流成本+包装费</td> <!-- 成本备注 -->
+                            <td>物流成本+包装费</td>
                             <td>1130.30</td>
-                            <td>基础运费+燃油附加费</td> <!-- 报价明细 -->
+                            <td>基础运费+燃油附加费</td>
                             <td>331.30</td>
                             <td>3708875402</td>
                             <td>已到达目的国</td>
@@ -162,9 +226,9 @@
                             <td>空派专线</td>
                             <td>2026-03-17</td>
                             <td>26.00</td>
-                            <td>清关服务费</td> <!-- 成本备注 -->
+                            <td>清关服务费</td>
                             <td>1482.00</td>
-                            <td>空派特惠价</td> <!-- 报价明细 -->
+                            <td>空派特惠价</td>
                             <td>1456.00</td>
                             <td>1Z0R6D926835462840</td>
                             <td>清关中</td>
@@ -197,9 +261,9 @@
                             <td>空派专线</td>
                             <td>2026-03-17</td>
                             <td>37.00</td>
-                            <td>仓储+打包费</td> <!-- 成本备注 -->
+                            <td>仓储+打包费</td>
                             <td>1782.00</td>
-                            <td>标准空派报价</td> <!-- 报价明细 -->
+                            <td>标准空派报价</td>
                             <td>1755.00</td>
                             <td>889318897468</td>
                             <td>运输中</td>
@@ -216,7 +280,6 @@
                 </table>
             </div>
             
-            <!-- 分页 -->
             <div class="pagination">
                 <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
                 <button class="page-btn active">1</button>
@@ -224,11 +287,9 @@
             </div>
         </section>
         
-        <!-- 页脚 -->
         <footer class="footer">© 2026 臻方供应链管理系统 | 版本号: v2.0.0</footer>
     </div>
 
-    <!-- 模态框：添加/编辑订单（新增成本备注、报价明细输入框） -->
     <div class="modal-overlay" id="order-modal">
         <div class="modal">
             <div class="modal-header">
@@ -239,7 +300,6 @@
                 <form id="order-form">
                     <input type="hidden" id="edit-row-index" value="-1">
                     <div class="form-grid">
-                        <!-- 基础信息 -->
                         <div class="form-group">
                             <label class="form-label">客户名称</label>
                             <input type="text" id="form-customer" class="form-control" required placeholder="例如：Moshe">
@@ -252,7 +312,6 @@
                             <label class="form-label">入仓日期</label>
                             <input type="date" id="form-warehouse-in" class="form-control" required>
                         </div>
-                        <!-- 商品信息 -->
                         <div class="form-group">
                             <label class="form-label">商品名称</label>
                             <input type="text" id="form-product-name" class="form-control" placeholder="例如：折叠椅">
@@ -265,7 +324,6 @@
                             <label class="form-label">货品件数</label>
                             <input type="number" id="form-quantity" class="form-control" placeholder="例如：10">
                         </div>
-                        <!-- 收货信息 -->
                         <div class="form-group">
                             <label class="form-label">货品重量</label>
                             <input type="text" id="form-weight" class="form-control" placeholder="例如：25.5kg">
@@ -278,7 +336,6 @@
                             <label class="form-label">收货人信息</label>
                             <input type="text" id="form-receiver" class="form-control" placeholder="例如：Moshe +972501234567">
                         </div>
-                        <!-- 物流信息 -->
                         <div class="form-group">
                             <label class="form-label">申报价值</label>
                             <input type="text" id="form-declare-value" class="form-control" placeholder="例如：500.00 USD">
@@ -304,7 +361,6 @@
                             <label class="form-label">出仓日期</label>
                             <input type="date" id="form-warehouse-out" class="form-control">
                         </div>
-                        <!-- 财务信息（新增成本备注、报价明细） -->
                         <div class="form-group">
                             <label class="form-label">应付(RMB)</label>
                             <input type="number" step="0.01" id="form-payable" class="form-control" placeholder="例如：799.00">
@@ -312,7 +368,7 @@
                             <div id="pay-items-container" style="margin-top: 10px; min-height: 40px;"></div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">成本备注</label> <!-- 新增 -->
+                            <label class="form-label">成本备注</label>
                             <input type="text" id="form-cost-remark" class="form-control" placeholder="例如：物流成本+包装费">
                         </div>
                         <div class="form-group">
@@ -320,14 +376,13 @@
                             <input type="number" step="0.01" id="form-customer-pay" class="form-control" placeholder="例如：1130.30">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">报价明细</label> <!-- 新增 -->
+                            <label class="form-label">报价明细</label>
                             <input type="text" id="form-quote-detail" class="form-control" placeholder="例如：基础运费+燃油附加费">
                         </div>
                         <div class="form-group">
                             <label class="form-label">利润(RMB)</label>
                             <input type="number" step="0.01" id="form-profit" class="form-control" readonly placeholder="自动计算：客户付款 - 应付">
                         </div>
-                        <!-- 其他信息 -->
                         <div class="form-group">
                             <label class="form-label">转单号</label>
                             <input type="text" id="form-tracking-no" class="form-control" placeholder="例如：3708875402">
@@ -369,7 +424,6 @@
         </div>
     </div>
 
-    <!-- 详情弹窗：收货人/备注/成本备注/报价明细 -->
     <div class="modal-overlay-detail" id="detail-modal">
         <div class="modal-detail">
             <div class="modal-detail-header">
@@ -380,39 +434,56 @@
         </div>
     </div>
 
-    <!-- 应付金额详情弹窗 -->
     <div class="modal-overlay" id="pay-detail-modal">
         <div class="modal" style="max-width: 700px;">
             <div class="modal-header">
                 <h3 class="modal-title">应付金额详情</h3>
                 <button class="modal-close" id="pay-detail-close">&times;</button>
             </div>
-            <div class="modal-body" id="pay-detail-content">
-                <!-- 动态填充 -->
-            </div>
+            <div class="modal-body" id="pay-detail-content"></div>
             <div class="modal-footer">
                 <button class="btn btn-outline" id="pay-detail-cancel">关闭</button>
             </div>
         </div>
     </div>
 
-    <!-- 轨迹详情弹窗 -->
     <div class="modal-overlay" id="tracking-detail-modal">
         <div class="modal" style="max-width: 600px;">
             <div class="modal-header">
                 <h3 class="modal-title">轨迹记录详情</h3>
                 <button class="modal-close" id="tracking-detail-close">&times;</button>
             </div>
-            <div class="modal-body" id="tracking-detail-content">
-                <!-- 动态填充轨迹记录 -->
-            </div>
+            <div class="modal-body" id="tracking-detail-content"></div>
             <div class="modal-footer">
                 <button class="btn btn-outline" id="tracking-detail-cancel">关闭</button>
             </div>
         </div>
     </div>
 
-    <!-- 修正：引用仓库内的 JavaScript.js 文件（替代原有内嵌脚本） -->
     <script src="JavaScript.js"></script>
+
+    <!-- 密码验证逻辑 -->
+    <script>
+        // ================== 你可以自己改密码 ==================
+        const CORRECT_PASSWORD = "811218";
+        // ====================================================
+
+        function checkPassword() {
+            const input = document.getElementById("passwordInput").value;
+            const error = document.getElementById("errorTip");
+            
+            if (input === CORRECT_PASSWORD) {
+                document.getElementById("loginOverlay").style.display = "none";
+                document.getElementById("mainContainer").style.display = "block";
+            } else {
+                error.style.display = "block";
+            }
+        }
+
+        // 回车登录
+        document.getElementById("passwordInput").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") checkPassword();
+        });
+    </script>
 </body>
 </html>
