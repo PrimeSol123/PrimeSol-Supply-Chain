@@ -1,31 +1,22 @@
 let orderData = [];
 let currentEditIndex = -1;
+let tempPayItems = []; // 应付子项临时数据
+let tempTrackingRecords = []; // 轨迹记录临时数据
 
-document.addEventListener('DOMContentLoaded', async function () {
+document.addEventListener('DOMContentLoaded', function () {
   loadFromLocal();
   renderTable();
   bindEvents();
-  autoCalculateProfit();
   initImportExport();
 });
 
 // 本地存储
 function loadFromLocal() {
-  try {
-    const local = localStorage.getItem('supplyChainData');
-    if (local) {
-      orderData = JSON.parse(local);
-    } else {
-      setDefaultData();
-    }
-  } catch (e) {
-    setDefaultData();
-  }
-}
-
-function setDefaultData() {
-  orderData = [
-    {
+  const local = localStorage.getItem('supplyChainData');
+  if (local) {
+    orderData = JSON.parse(local);
+  } else {
+    orderData = [{
       id: 1,
       warehouseIn: '2026-03-16',
       customer: 'Moshe',
@@ -59,9 +50,9 @@ function setDefaultData() {
         { time: '2026-03-17 10:30:00', content: '已到达目的国' },
         { time: '2026-03-16 18:20:00', content: '已出库，运输中' }
       ]
-    }
-  ];
-  saveToLocal();
+    }];
+    saveToLocal();
+  }
 }
 
 function saveToLocal() {
@@ -72,7 +63,6 @@ function saveToLocal() {
 function renderTable() {
   const tbody = document.getElementById('order-tbody');
   tbody.innerHTML = '';
-
   orderData.forEach((item, index) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -110,28 +100,33 @@ function renderTable() {
     `;
     tbody.appendChild(tr);
   });
-
   document.getElementById('record-count').textContent = `(共${orderData.length}条记录)`;
 }
 
-// 绑定全部事件
+// 绑定所有事件
 function bindEvents() {
-  // 新增
+  // 新增订单
   document.getElementById('add-btn').onclick = () => {
     currentEditIndex = -1;
+    tempPayItems = [];
+    tempTrackingRecords = [];
     document.getElementById('order-form').reset();
     document.getElementById('modal-title').innerText = '添加订单';
+    renderTempPayItems();
+    renderTempTrackingRecords();
     document.getElementById('order-modal').style.display = 'flex';
   };
 
-  // 编辑
+  // 编辑订单
   document.querySelectorAll('.edit-btn').forEach(btn => {
     btn.onclick = e => {
       const index = +e.currentTarget.dataset.index;
       currentEditIndex = index;
       const item = orderData[index];
+      tempPayItems = [...item.payItems];
+      tempTrackingRecords = [...item.trackingRecords];
       document.getElementById('modal-title').innerText = '编辑订单';
-
+      // 填充表单
       document.getElementById('form-customer').value = item.customer;
       document.getElementById('form-order-id').value = item.orderId;
       document.getElementById('form-warehouse-in').value = item.warehouseIn;
@@ -156,12 +151,14 @@ function bindEvents() {
       document.getElementById('form-customs').value = item.customs;
       document.getElementById('form-remark').value = item.remark;
       document.getElementById('form-status').value = item.status;
-
+      // 渲染临时子项
+      renderTempPayItems();
+      renderTempTrackingRecords();
       document.getElementById('order-modal').style.display = 'flex';
     };
   });
 
-  // 删除
+  // 删除订单
   document.querySelectorAll('.delete-btn').forEach(btn => {
     btn.onclick = e => {
       if (!confirm('确定删除此订单？')) return;
@@ -173,7 +170,46 @@ function bindEvents() {
     };
   });
 
-  // 保存
+  // 查看详情（完整弹窗）
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.onclick = e => {
+      const index = +e.currentTarget.dataset.index;
+      const item = orderData[index];
+      let html = `
+        <div style="padding:16px;line-height:1.8;">
+          <h3>订单详情：${item.orderId}</h3>
+          <p><strong>客户：</strong>${item.customer}</p>
+          <p><strong>收货人：</strong>${item.receiver}</p>
+          <p><strong>目的地：</strong>${item.country}</p>
+          <p><strong>产品：</strong>${item.productName} (${item.goods}) × ${item.quantity}</p>
+          <p><strong>重量：</strong>${item.weight}</p>
+          <p><strong>申报价值：</strong>${item.declareValue}</p>
+          <p><strong>运输：</strong>${item.transport} | ${item.supplyChain} | ${item.channel}</p>
+          <p><strong>入库：</strong>${item.warehouseIn} | 出库：${item.warehouseOut}</p>
+          <p><strong>应付：</strong>¥${item.payable.toFixed(2)} | 应收：¥${item.customerPay.toFixed(2)} | 利润：¥${item.profit.toFixed(2)}</p>
+          <p><strong>物流号：</strong>${item.trackingNo} | 状态：${item.trackingStatus}</p>
+          <p><strong>报关：</strong>${item.customs} | 状态：${item.status}</p>
+          <p><strong>备注：</strong>${item.remark}</p>
+          <h4>应付子项</h4>
+          <ul>${item.payItems.map(p => `<li>¥${p.amount.toFixed(2)} - ${p.remark}</li>`).join('')}</ul>
+          <h4>物流轨迹</h4>
+          <ul>${item.trackingRecords.map(t => `<li>${t.time} - ${t.content}</li>`).join('')}</ul>
+        </div>
+      `;
+      const mask = document.createElement('div');
+      mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:grid;place-items:center;';
+      mask.innerHTML = `
+        <div style="background:#fff;max-width:600px;max-height:80vh;overflow-y:auto;border-radius:10px;">
+          ${html}
+          <button onclick="this.closest('div').remove()" style="margin:16px;padding:8px 16px;background:#165DFF;color:white;border:none;border-radius:6px;">关闭</button>
+        </div>
+      `;
+      document.body.appendChild(mask);
+      mask.onclick = ev => ev.target === mask && mask.remove();
+    };
+  });
+
+  // 保存订单（含子项+轨迹）
   document.getElementById('modal-save').onclick = () => {
     const formData = {
       warehouseIn: document.getElementById('form-warehouse-in').value,
@@ -200,16 +236,14 @@ function bindEvents() {
       customs: document.getElementById('form-customs').value,
       remark: document.getElementById('form-remark').value,
       status: document.getElementById('form-status').value,
-      payItems: [],
-      trackingRecords: []
+      payItems: tempPayItems,
+      trackingRecords: tempTrackingRecords
     };
-
     if (currentEditIndex === -1) {
       orderData.push({ id: Date.now(), ...formData });
     } else {
       orderData[currentEditIndex] = { ...orderData[currentEditIndex], ...formData };
     }
-
     saveToLocal();
     document.getElementById('order-modal').style.display = 'none';
     renderTable();
@@ -222,71 +256,101 @@ function bindEvents() {
     document.getElementById('order-modal').style.display = 'none';
   };
 
-  // 自动算利润
-  document.getElementById('form-customer-pay').oninput =
-  document.getElementById('form-payable').oninput = autoCalculateProfit;
+  // 自动计算利润
+  document.getElementById('form-payable').oninput =
+  document.getElementById('form-customer-pay').oninput = () => {
+    const cost = +document.getElementById('form-payable').value || 0;
+    const income = +document.getElementById('form-customer-pay').value || 0;
+    document.getElementById('form-profit').value = (income - cost).toFixed(2);
+  };
 
-  // 详情弹窗
+  // 应付子项：添加
+  document.getElementById('add-pay-item').onclick = () => {
+    const amount = +document.getElementById('pay-amount').value;
+    const remark = document.getElementById('pay-remark').value;
+    if (!amount || !remark) return alert('请填写金额和备注');
+    tempPayItems.push({ amount, remark });
+    document.getElementById('pay-amount').value = '';
+    document.getElementById('pay-remark').value = '';
+    renderTempPayItems();
+  };
+
+  // 应付子项：删除
+  window.deletePayItem = (idx) => {
+    tempPayItems.splice(idx, 1);
+    renderTempPayItems();
+  };
+
+  // 轨迹记录：添加
+  document.getElementById('add-tracking-record').onclick = () => {
+    const time = document.getElementById('tracking-time').value;
+    const content = document.getElementById('tracking-content').value;
+    if (!time || !content) return alert('请填写时间和内容');
+    tempTrackingRecords.push({ time, content });
+    document.getElementById('tracking-time').value = '';
+    document.getElementById('tracking-content').value = '';
+    renderTempTrackingRecords();
+  };
+
+  // 轨迹记录：删除
+  window.deleteTrackingRecord = (idx) => {
+    tempTrackingRecords.splice(idx, 1);
+    renderTempTrackingRecords();
+  };
+
+  // 详情弹窗（收货人/轨迹/备注等）
   document.querySelectorAll('.detail-link').forEach(el => {
     el.onclick = function () {
       const idx = +this.dataset.index;
       const type = this.dataset.type;
       const item = orderData[idx];
       let title, content;
-
       switch (type) {
-        case 'receiver':
-          title = '收货人信息';
-          content = item.receiver;
-          break;
-        case 'pay':
-          title = '应付金额';
-          content = '¥' + item.payable.toFixed(2);
-          break;
-        case 'cost':
-          title = '成本备注';
-          content = item.costRemark;
-          break;
-        case 'quote':
-          title = '报价明细';
-          content = item.quoteDetail;
-          break;
-        case 'tracking':
-          title = '物流轨迹';
-          content = item.trackingStatus;
-          break;
-        case 'remark':
-          title = '客服备注';
-          content = item.remark;
-          break;
+        case 'receiver': title = '收货人'; content = item.receiver; break;
+        case 'pay': title = '应付金额'; content = '¥' + item.payable.toFixed(2); break;
+        case 'cost': title = '成本备注'; content = item.costRemark; break;
+        case 'quote': title = '报价明细'; content = item.quoteDetail; break;
+        case 'tracking': title = '物流轨迹'; content = item.trackingStatus; break;
+        case 'remark': title = '客服备注'; content = item.remark; break;
         default: return;
       }
-
       const mask = document.createElement('div');
-      mask.style.cssText = `
-        position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;
-        display:grid;place-items:center;
-      `;
+      mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:grid;place-items:center;';
       mask.innerHTML = `
         <div style="background:#fff;padding:24px;border-radius:10px;min-width:300px;">
-          <h3 style="margin:0 0 12px;">${title}</h3>
-          <p style="white-space:pre-wrap;">${content}</p>
-          <button id="closeDetail" style="margin-top:12px;padding:8px 16px;background:#165DFF;color:white;border:none;border-radius:6px;cursor:pointer;">关闭</button>
+          <h3>${title}</h3>
+          <p>${content}</p>
+          <button onclick="this.closest('div').remove()" style="margin-top:12px;padding:8px 16px;background:#165DFF;color:white;border:none;border-radius:6px;">关闭</button>
         </div>
       `;
       document.body.appendChild(mask);
-      mask.onclick = e => {
-        if (e.target === mask) mask.remove();
-      };
-      mask.querySelector('#closeDetail').onclick = () => mask.remove();
+      mask.onclick = ev => ev.target === mask && mask.remove();
     };
   });
 }
 
-function autoCalculateProfit() {
-  const cost = +document.getElementById('form-payable').value || 0;
-  const income = +document.getElementById('form-customer-pay').value || 0;
-  document.getElementById('form-profit').value = (income - cost).toFixed(2);
+// 渲染临时应付子项
+function renderTempPayItems() {
+  const container = document.getElementById('pay-items-container');
+  container.innerHTML = tempPayItems.map((p, i) => `
+    <div style="display:flex;gap:8px;margin:4px 0;">
+      <span>¥${p.amount.toFixed(2)}</span>
+      <span>${p.remark}</span>
+      <button onclick="deletePayItem(${i})" style="color:red;border:none;background:none;">×</button>
+    </div>
+  `).join('');
+}
+
+// 渲染临时轨迹记录
+function renderTempTrackingRecords() {
+  const container = document.getElementById('tracking-records-container');
+  container.innerHTML = tempTrackingRecords.map((t, i) => `
+    <div style="display:flex;gap:8px;margin:4px 0;">
+      <span>${t.time}</span>
+      <span>${t.content}</span>
+      <button onclick="deleteTrackingRecord(${i})" style="color:red;border:none;background:none;">×</button>
+    </div>
+  `).join('');
 }
 
 // 导入导出
@@ -303,13 +367,12 @@ function initImportExport() {
     alert('导出成功！');
   };
 
-  // 导入按钮
-  const ib = document.createElement('button');
-  ib.className = 'btn btn-outline';
-  ib.innerHTML = '<i class="fas fa-upload"></i> 导入数据';
-  document.querySelector('.table-actions').appendChild(ib);
-
-  ib.onclick = () => {
+  // 导入
+  const importBtn = document.createElement('button');
+  importBtn.className = 'btn btn-outline';
+  importBtn.innerHTML = '<i class="fas fa-upload"></i> 导入数据';
+  document.querySelector('.table-actions').appendChild(importBtn);
+  importBtn.onclick = () => {
     const inp = document.createElement('input');
     inp.type = 'file';
     inp.accept = '.json';
