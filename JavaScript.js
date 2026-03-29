@@ -1,6 +1,6 @@
 // ==============================================
-// 臻方供应链管理系统 - 仅修复：编辑按钮、删除按钮点击无反应
-// 其他所有功能 100% 保留不变
+// 臻方供应链管理系统 - 修复：弹窗自动换行 + 多字段改为可拉伸文本域
+// 其他所有功能 100% 保留
 // ==============================================
 let orderData = [];
 let currentEditIndex = -1;
@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     renderTable();
     bindAllEvents();
     replaceCountryFilterWithDateFilter();
+    convertInputsToTextarea(); // 转为可拉伸文本域
 });
 
 // 本地存储
@@ -87,6 +88,28 @@ function replaceCountryFilterWithDateFilter() {
     `;
 }
 
+// ====================== 修复2：货品描述/收货人/成本备注/报价明细 → 改为可拉伸文本域 ======================
+function convertInputsToTextarea() {
+    const targets = [
+        'form-goods',
+        'form-receiver',
+        'form-cost-remark',
+        'form-quote-detail'
+    ];
+    targets.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.tagName === 'INPUT') {
+            const textarea = document.createElement('textarea');
+            textarea.id = el.id;
+            textarea.className = el.className;
+            textarea.style.resize = 'both';
+            textarea.style.minHeight = '60px';
+            textarea.value = el.value;
+            el.replaceWith(textarea);
+        }
+    });
+}
+
 // 表格渲染
 function renderTable(data = orderData) {
     const tbody = document.getElementById('order-tbody');
@@ -142,6 +165,7 @@ function bindAllEvents() {
         document.getElementById('modal-title').textContent = '添加订单';
         renderTempPayItems();
         renderTempTrackingRecords();
+        convertInputsToTextarea();
         document.getElementById('order-modal').style.display = 'flex';
     };
 
@@ -194,7 +218,7 @@ function bindAllEvents() {
         renderTable();
     };
 
-    // ====================== 修复：编辑按钮（全局委托绑定，搜索后依然可用） ======================
+    // 编辑按钮
     document.body.addEventListener('click', function(e){
         if(e.target.closest('.edit-btn')){
             const index = parseInt(e.target.closest('.edit-btn').dataset.index);
@@ -230,12 +254,13 @@ function bindAllEvents() {
 
             renderTempPayItems();
             renderTempTrackingRecords();
+            convertInputsToTextarea();
             document.getElementById('modal-title').textContent = '编辑订单';
             document.getElementById('order-modal').style.display = 'flex';
         }
     });
 
-    // ====================== 修复：删除按钮（全局委托绑定，搜索后依然可用） ======================
+    // 删除按钮
     document.body.addEventListener('click', function(e){
         if(e.target.closest('.delete-btn')){
             if(!confirm('确定删除此订单？')) return;
@@ -256,12 +281,12 @@ function bindAllEvents() {
             mask.innerHTML = `
                 <div style="background:#fff;width:90%;max-width:800px;padding:24px;border-radius:12px;max-height:90vh;overflow:auto">
                     <h3 style="margin:0 0 16px;color:#165DFF">订单详情</h3>
-                    <p><strong>货品描述：</strong>${item.goods || '无'}</p>
+                    <p style="white-space:pre-wrap;word-break:break-all"><strong>货品描述：</strong>${item.goods || '无'}</p>
                     <p><strong>应付金额：</strong>${item.payable.toFixed(2)}</p>
-                    <p><strong>成本备注：</strong>${item.costRemark || '无'}</p>
-                    <p><strong>报价明细：</strong>${item.quoteDetail || '无'}</p>
-                    <p><strong>最新轨迹：</strong>${item.trackingStatus || '无'}</p>
-                    <p><strong>客服备注：</strong>${item.remark || '无'}</p>
+                    <p style="white-space:pre-wrap;word-break:break-all"><strong>成本备注：</strong>${item.costRemark || '无'}</p>
+                    <p style="white-space:pre-wrap;word-break:break-all"><strong>报价明细：</strong>${item.quoteDetail || '无'}</p>
+                    <p style="white-space:pre-wrap;word-break:break-all"><strong>最新轨迹：</strong>${item.trackingStatus || '无'}</p>
+                    <p style="white-space:pre-wrap;word-break:break-all"><strong>客服备注：</strong>${item.remark || '无'}</p>
                     <button onclick="this.closest('div').parentNode.remove()" style="margin-top:16px;padding:8px 24px;background:#165DFF;color:white;border:none;border-radius:6px;cursor:pointer">关闭</button>
                 </div>
             `;
@@ -269,7 +294,7 @@ function bindAllEvents() {
         }
     });
 
-    // 字段弹窗
+    // ====================== 修复1：所有详情弹窗自动换行 ======================
     document.body.addEventListener('click', function (e) {
         if (e.target.classList.contains('detail-link')) {
             const { type, index } = e.target.dataset;
@@ -281,9 +306,9 @@ function bindAllEvents() {
             const mask = document.createElement('div');
             mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
             mask.innerHTML = `
-                <div style="background:#fff;padding:24px;border-radius:12px;min-width:300px">
+                <div style="background:#fff;padding:24px;border-radius:12px;min-width:300px;max-width:500px">
                     <h3 style="margin:0 0 16px;color:#165DFF">${labels[type]}</h3>
-                    <p style="white-space:pre-line">${item[type] || '无内容'}</p>
+                    <p style="white-space:pre-wrap;word-break:break-all;line-height:1.6">${item[type] || '无内容'}</p>
                     <button onclick="this.closest('div').parentNode.remove()" style="width:100%;margin-top:16px;padding:10px;background:#165DFF;color:white;border:none;border-radius:6px;cursor:pointer">关闭</button>
                 </div>
             `;
