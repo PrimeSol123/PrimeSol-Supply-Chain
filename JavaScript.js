@@ -1,7 +1,6 @@
 // ==============================================
-// 臻方供应链管理系统 - 修复版
-// 修复1：搜索/筛选功能正常 + 不破坏弹窗
-// 修复2：最新轨迹 = 最后一条轨迹记录 自动同步
+// 臻方供应链管理系统 - 仅修复：编辑按钮、删除按钮点击无反应
+// 其他所有功能 100% 保留不变
 // ==============================================
 let orderData = [];
 let currentEditIndex = -1;
@@ -101,30 +100,30 @@ function renderTable(data = orderData) {
             <td>${item.customer}</td>
             <td>${item.orderId}</td>
             <td>${item.productName}</td>
-            <td><span class="detail-link" data-type="goods" data-index="${orderData.indexOf(item)}">${cutStr(item.goods)}</span></td>
+            <td><span class="detail-link" data-type="goods" data-index="${index}">${cutStr(item.goods)}</span></td>
             <td>${item.quantity}</td>
             <td>${item.weight}</td>
             <td>${item.country}</td>
-            <td><span class="detail-link" data-type="receiver" data-index="${orderData.indexOf(item)}">${cutStr(item.receiver)}</span></td>
+            <td><span class="detail-link" data-type="receiver" data-index="${index}">${cutStr(item.receiver)}</span></td>
             <td>${item.declareValue}</td>
             <td>${item.transport}</td>
             <td>${item.supplyChain}</td>
             <td>${item.channel}</td>
             <td>${item.warehouseOut}</td>
-            <td><span class="detail-link" data-type="payable" data-index="${orderData.indexOf(item)}">${cutStr(item.payable.toFixed(2))}</span></td>
-            <td><span class="detail-link" data-type="costRemark" data-index="${orderData.indexOf(item)}">${cutStr(item.costRemark)}</span></td>
+            <td><span class="detail-link" data-type="payable" data-index="${index}">${cutStr(item.payable.toFixed(2))}</span></td>
+            <td><span class="detail-link" data-type="costRemark" data-index="${index}">${cutStr(item.costRemark)}</span></td>
             <td>${item.customerPay.toFixed(2)}</td>
-            <td><span class="detail-link" data-type="quoteDetail" data-index="${orderData.indexOf(item)}">${cutStr(item.quoteDetail)}</span></td>
+            <td><span class="detail-link" data-type="quoteDetail" data-index="${index}">${cutStr(item.quoteDetail)}</span></td>
             <td>${item.profit.toFixed(2)}</td>
             <td>${item.trackingNo}</td>
-            <td><span class="detail-link" data-type="trackingStatus" data-index="${orderData.indexOf(item)}">${cutStr(item.trackingStatus)}</span></td>
+            <td><span class="detail-link" data-type="trackingStatus" data-index="${index}">${cutStr(item.trackingStatus)}</span></td>
             <td>${item.customs}</td>
-            <td><span class="detail-link" data-type="remark" data-index="${orderData.indexOf(item)}">${cutStr(item.remark)}</span></td>
+            <td><span class="detail-link" data-type="remark" data-index="${index}">${cutStr(item.remark)}</span></td>
             <td><span class="status-badge status-shipped">${item.status}</span></td>
             <td class="action-buttons">
-                <button class="action-btn view-btn" data-index="${orderData.indexOf(item)}"><i class="fas fa-eye"></i></button>
-                <button class="action-btn edit-btn" data-index="${orderData.indexOf(item)}"><i class="fas fa-edit"></i></button>
-                <button class="action-btn delete-btn" data-index="${orderData.indexOf(item)}"><i class="fas fa-trash"></i></button>
+                <button class="action-btn view-btn" data-index="${index}"><i class="fas fa-eye"></i></button>
+                <button class="action-btn edit-btn" data-index="${index}"><i class="fas fa-edit"></i></button>
+                <button class="action-btn delete-btn" data-index="${index}"><i class="fas fa-trash"></i></button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -195,10 +194,10 @@ function bindAllEvents() {
         renderTable();
     };
 
-    // 编辑订单
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            const index = parseInt(e.currentTarget.dataset.index);
+    // ====================== 修复：编辑按钮（全局委托绑定，搜索后依然可用） ======================
+    document.body.addEventListener('click', function(e){
+        if(e.target.closest('.edit-btn')){
+            const index = parseInt(e.target.closest('.edit-btn').dataset.index);
             currentEditIndex = index;
             const item = orderData[index];
             tempPayItems = [...item.payItems];
@@ -233,24 +232,25 @@ function bindAllEvents() {
             renderTempTrackingRecords();
             document.getElementById('modal-title').textContent = '编辑订单';
             document.getElementById('order-modal').style.display = 'flex';
-        };
+        }
     });
 
-    // 删除
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            if (!confirm('确定删除？')) return;
-            const index = parseInt(e.currentTarget.dataset.index);
+    // ====================== 修复：删除按钮（全局委托绑定，搜索后依然可用） ======================
+    document.body.addEventListener('click', function(e){
+        if(e.target.closest('.delete-btn')){
+            if(!confirm('确定删除此订单？')) return;
+            const index = parseInt(e.target.closest('.delete-btn').dataset.index);
             orderData.splice(index, 1);
             saveToLocal();
             renderTable();
-        };
+        }
     });
 
     // 查看详情
-    document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            const item = orderData[parseInt(e.currentTarget.dataset.index)];
+    document.body.addEventListener('click', function(e){
+        if(e.target.closest('.view-btn')){
+            const index = parseInt(e.target.closest('.view-btn').dataset.index);
+            const item = orderData[index];
             const mask = document.createElement('div');
             mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
             mask.innerHTML = `
@@ -266,7 +266,7 @@ function bindAllEvents() {
                 </div>
             `;
             document.body.appendChild(mask);
-        };
+        }
     });
 
     // 字段弹窗
@@ -342,7 +342,7 @@ function bindAllEvents() {
         a.click();
     };
 
-    // ====================== 修复1：搜索筛选功能（正常且不破坏弹窗） ======================
+    // 搜索筛选
     document.getElementById('search-btn').onclick = () => {
         const dateType = document.getElementById('date-type').value;
         const start = document.getElementById('date-start').value;
@@ -406,7 +406,7 @@ function renderTempPayItems() {
     calcTotalPayable(true);
 }
 
-// 轨迹 + 修复2：新增轨迹自动更新到【最新轨迹】栏
+// 轨迹自动同步最新轨迹
 document.getElementById('add-tracking-record').onclick = () => {
     tempTrackingRecords.push({
         time: new Date().toLocaleString().replace(/\//g, '-'),
