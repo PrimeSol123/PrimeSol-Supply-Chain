@@ -1,6 +1,6 @@
 // ==============================================
-// 臻方供应链管理系统 - 修复：弹窗自动换行 + 多字段改为可拉伸文本域
-// 其他所有功能 100% 保留
+// 臻方供应链管理系统 - 新增导出Excel按钮
+// 原有所有功能100%保留不动
 // ==============================================
 let orderData = [];
 let currentEditIndex = -1;
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     renderTable();
     bindAllEvents();
     replaceCountryFilterWithDateFilter();
-    convertInputsToTextarea(); // 转为可拉伸文本域
+    convertInputsToTextarea();
 });
 
 // 本地存储
@@ -34,7 +34,7 @@ function loadFromLocal() {
             receiver: 'Moshe Cohen +972501234567',
             declareValue: '500.00 USD',
             transport: '快递',
-            supplyChain: '加时特',
+            supplyChain: '加时',
             channel: '快递专线',
             warehouseOut: '2026-03-17',
             payable: 849.00,
@@ -88,7 +88,7 @@ function replaceCountryFilterWithDateFilter() {
     `;
 }
 
-// ====================== 修复2：货品描述/收货人/成本备注/报价明细 → 改为可拉伸文本域 ======================
+// 转为可拉伸文本域
 function convertInputsToTextarea() {
     const targets = [
         'form-goods',
@@ -294,7 +294,7 @@ function bindAllEvents() {
         }
     });
 
-    // ====================== 修复1：所有详情弹窗自动换行 ======================
+    // 字段弹窗
     document.body.addEventListener('click', function (e) {
         if (e.target.classList.contains('detail-link')) {
             const { type, index } = e.target.dataset;
@@ -358,7 +358,7 @@ function bindAllEvents() {
     };
     document.querySelector('.table-actions').appendChild(importBtn);
 
-    // 导出
+    // ====================== 导出JSON（保留） ======================
     document.getElementById('export-btn').onclick = () => {
         const blob = new Blob([JSON.stringify(orderData, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
@@ -366,6 +366,13 @@ function bindAllEvents() {
         a.download = '臻方供应链数据.json';
         a.click();
     };
+
+    // ====================== 新增：导出Excel按钮 ======================
+    const excelBtn = document.createElement('button');
+    excelBtn.className = 'btn btn-success';
+    excelBtn.innerHTML = '<i class="fas fa-file-excel"></i> 导出Excel';
+    excelBtn.onclick = exportExcel;
+    document.querySelector('.table-actions').appendChild(excelBtn);
 
     // 搜索筛选
     document.getElementById('search-btn').onclick = () => {
@@ -403,6 +410,50 @@ function bindAllEvents() {
         document.getElementById('date-end').value = '';
         renderTable(orderData);
     };
+}
+
+// ====================== 导出Excel核心函数 ======================
+function exportExcel() {
+    const excelData = orderData.map(item => ({
+        '入仓日期': item.warehouseIn,
+        '出仓日期': item.warehouseOut,
+        '客户名称': item.customer,
+        '订单编号': item.orderId,
+        '产品名称': item.productName,
+        '货品描述': item.goods,
+        '数量': item.quantity,
+        '重量': item.weight,
+        '目的地国家': item.country,
+        '收货人信息': item.receiver,
+        '申报价值': item.declareValue,
+        '运输方式': item.transport,
+        '供应链': item.supplyChain,
+        '渠道': item.channel,
+        '应付金额': item.payable,
+        '成本备注': item.costRemark,
+        '客户付款': item.customerPay,
+        '报价明细': item.quoteDetail,
+        '利润': item.profit,
+        '运单号': item.trackingNo,
+        '最新轨迹': item.trackingStatus,
+        '报关方式': item.customs,
+        '客服备注': item.remark,
+        '订单状态': item.status
+    }));
+
+    const header = Object.keys(excelData[0] || {}).join('\t');
+    const rows = excelData.map(item => Object.values(item).map(v => {
+        let val = v === null || v === undefined ? '' : v;
+        val = String(val).replace(/\t/g, ' ').replace(/\n/g, ' ');
+        return val;
+    }).join('\t'));
+
+    const csv = header + '\n' + rows.join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'application/vnd.ms-excel' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '臻方供应链订单_' + new Date().toLocaleDateString() + '.xls';
+    a.click();
 }
 
 // 应付求和
