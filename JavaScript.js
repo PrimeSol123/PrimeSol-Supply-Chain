@@ -1,9 +1,7 @@
 // ==============================================
-// 臻方供应链管理系统 - 按需求定制修复版
-// 功能1：新增 JSON 导入
-// 功能2：修复所有弹窗空白BUG
-// 功能3：应付子项自动求和 = 应付总金额
-// 功能4：国家筛选 → 改为【入仓/出仓日期范围筛选】
+// 臻方供应链管理系统 - 修复版
+// 修复1：搜索/筛选功能正常 + 不破坏弹窗
+// 修复2：最新轨迹 = 最后一条轨迹记录 自动同步
 // ==============================================
 let orderData = [];
 let currentEditIndex = -1;
@@ -15,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loadFromLocal();
     renderTable();
     bindAllEvents();
-    replaceCountryFilterWithDateFilter(); // 国家→日期筛选
+    replaceCountryFilterWithDateFilter();
 });
 
 // 本地存储
@@ -66,9 +64,7 @@ function saveToLocal() {
     localStorage.setItem('zhenfangSupplyChainData', JSON.stringify(orderData));
 }
 
-// ==============================
-// 需求4：国家筛选 → 日期筛选
-// ==============================
+// 日期筛选替换国家筛选
 function replaceCountryFilterWithDateFilter() {
     const countryGroup = document.querySelector('#country').closest('.form-group');
     countryGroup.innerHTML = `
@@ -92,13 +88,11 @@ function replaceCountryFilterWithDateFilter() {
     `;
 }
 
-// ==============================
 // 表格渲染
-// ==============================
-function renderTable() {
+function renderTable(data = orderData) {
     const tbody = document.getElementById('order-tbody');
     tbody.innerHTML = '';
-    orderData.forEach((item, index) => {
+    data.forEach((item, index) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><input type="checkbox"></td>
@@ -107,40 +101,38 @@ function renderTable() {
             <td>${item.customer}</td>
             <td>${item.orderId}</td>
             <td>${item.productName}</td>
-            <td><span class="detail-link" data-type="goods" data-index="${index}">${cutStr(item.goods)}</span></td>
+            <td><span class="detail-link" data-type="goods" data-index="${orderData.indexOf(item)}">${cutStr(item.goods)}</span></td>
             <td>${item.quantity}</td>
             <td>${item.weight}</td>
             <td>${item.country}</td>
-            <td><span class="detail-link" data-type="receiver" data-index="${index}">${cutStr(item.receiver)}</span></td>
+            <td><span class="detail-link" data-type="receiver" data-index="${orderData.indexOf(item)}">${cutStr(item.receiver)}</span></td>
             <td>${item.declareValue}</td>
             <td>${item.transport}</td>
             <td>${item.supplyChain}</td>
             <td>${item.channel}</td>
             <td>${item.warehouseOut}</td>
-            <td><span class="detail-link" data-type="payable" data-index="${index}">${cutStr(item.payable.toFixed(2))}</span></td>
-            <td><span class="detail-link" data-type="costRemark" data-index="${index}">${cutStr(item.costRemark)}</span></td>
+            <td><span class="detail-link" data-type="payable" data-index="${orderData.indexOf(item)}">${cutStr(item.payable.toFixed(2))}</span></td>
+            <td><span class="detail-link" data-type="costRemark" data-index="${orderData.indexOf(item)}">${cutStr(item.costRemark)}</span></td>
             <td>${item.customerPay.toFixed(2)}</td>
-            <td><span class="detail-link" data-type="quoteDetail" data-index="${index}">${cutStr(item.quoteDetail)}</span></td>
+            <td><span class="detail-link" data-type="quoteDetail" data-index="${orderData.indexOf(item)}">${cutStr(item.quoteDetail)}</span></td>
             <td>${item.profit.toFixed(2)}</td>
             <td>${item.trackingNo}</td>
-            <td><span class="detail-link" data-type="trackingStatus" data-index="${index}">${cutStr(item.trackingStatus)}</span></td>
+            <td><span class="detail-link" data-type="trackingStatus" data-index="${orderData.indexOf(item)}">${cutStr(item.trackingStatus)}</span></td>
             <td>${item.customs}</td>
-            <td><span class="detail-link" data-type="remark" data-index="${index}">${cutStr(item.remark)}</span></td>
+            <td><span class="detail-link" data-type="remark" data-index="${orderData.indexOf(item)}">${cutStr(item.remark)}</span></td>
             <td><span class="status-badge status-shipped">${item.status}</span></td>
             <td class="action-buttons">
-                <button class="action-btn view-btn" data-index="${index}"><i class="fas fa-eye"></i></button>
-                <button class="action-btn edit-btn" data-index="${index}"><i class="fas fa-edit"></i></button>
-                <button class="action-btn delete-btn" data-index="${index}"><i class="fas fa-trash"></i></button>
+                <button class="action-btn view-btn" data-index="${orderData.indexOf(item)}"><i class="fas fa-eye"></i></button>
+                <button class="action-btn edit-btn" data-index="${orderData.indexOf(item)}"><i class="fas fa-edit"></i></button>
+                <button class="action-btn delete-btn" data-index="${orderData.indexOf(item)}"><i class="fas fa-trash"></i></button>
             </td>
         `;
         tbody.appendChild(tr);
     });
-    document.getElementById('record-count').textContent = `(共${orderData.length}条记录)`;
+    document.getElementById('record-count').textContent = `(共${data.length}条记录)`;
 }
 
-// ==============================
-// 所有事件绑定
-// ==============================
+// 绑定所有事件
 function bindAllEvents() {
     // 添加订单
     document.getElementById('add-btn').onclick = () => {
@@ -162,6 +154,10 @@ function bindAllEvents() {
 
     // 保存订单
     document.getElementById('modal-save').onclick = () => {
+        const lastTrack = tempTrackingRecords.length > 0
+            ? tempTrackingRecords[tempTrackingRecords.length - 1].content
+            : document.getElementById('form-tracking-status').value;
+
         const formData = {
             warehouseIn: document.getElementById('form-warehouse-in').value,
             customer: document.getElementById('form-customer').value,
@@ -177,13 +173,13 @@ function bindAllEvents() {
             supplyChain: document.getElementById('form-supply-chain').value,
             channel: document.getElementById('form-channel').value,
             warehouseOut: document.getElementById('form-warehouse-out').value,
-            payable: calcTotalPayable(), // 需求3：自动求和
+            payable: calcTotalPayable(),
             costRemark: document.getElementById('form-cost-remark').value,
             customerPay: parseFloat(document.getElementById('form-customer-pay').value) || 0,
             quoteDetail: document.getElementById('form-quote-detail').value,
             profit: (parseFloat(document.getElementById('form-customer-pay').value) || 0) - calcTotalPayable(),
             trackingNo: document.getElementById('form-tracking-no').value,
-            trackingStatus: document.getElementById('form-tracking-status').value,
+            trackingStatus: lastTrack,
             customs: document.getElementById('form-customs').value,
             remark: document.getElementById('form-remark').value,
             status: document.getElementById('form-status').value,
@@ -273,21 +269,14 @@ function bindAllEvents() {
         };
     });
 
-    // ==============================
-    // 需求2：修复所有弹窗空白BUG
-    // ==============================
-    document.querySelectorAll('.detail-link').forEach(el => {
-        el.onclick = (e) => {
-            const { type, index } = e.currentTarget.dataset;
+    // 字段弹窗
+    document.body.addEventListener('click', function (e) {
+        if (e.target.classList.contains('detail-link')) {
+            const { type, index } = e.target.dataset;
             const item = orderData[index];
             const labels = {
-                goods: '货品描述',
-                receiver: '收货人信息',
-                payable: '应付金额',
-                costRemark: '成本备注',
-                quoteDetail: '报价明细',
-                trackingStatus: '最新轨迹',
-                remark: '客服备注'
+                goods: '货品描述', receiver: '收货人信息', payable: '应付金额',
+                costRemark: '成本备注', quoteDetail: '报价明细', trackingStatus: '最新轨迹', remark: '客服备注'
             };
             const mask = document.createElement('div');
             mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
@@ -299,7 +288,7 @@ function bindAllEvents() {
                 </div>
             `;
             document.body.appendChild(mask);
-        };
+        }
     });
 
     // 自动计算利润
@@ -310,18 +299,14 @@ function bindAllEvents() {
     };
     document.getElementById('form-customer-pay').oninput = calcProfit;
 
-    // ==============================
-    // 需求3：应付子项自动求和
-    // ==============================
+    // 应付子项
     document.getElementById('add-pay-item').onclick = () => {
         tempPayItems.push({ amount: 0, remark: '' });
         renderTempPayItems();
         calcTotalPayable(true);
     };
 
-    // ==============================
-    // 需求1：导入 JSON
-    // ==============================
+    // 导入数据
     const importBtn = document.createElement('button');
     importBtn.className = 'btn btn-outline';
     importBtn.innerHTML = '<i class="fas fa-upload"></i> 导入数据';
@@ -357,23 +342,45 @@ function bindAllEvents() {
         a.click();
     };
 
-    // 日期筛选
+    // ====================== 修复1：搜索筛选功能（正常且不破坏弹窗） ======================
     document.getElementById('search-btn').onclick = () => {
-        const type = document.getElementById('date-type').value;
+        const dateType = document.getElementById('date-type').value;
         const start = document.getElementById('date-start').value;
         const end = document.getElementById('date-end').value;
-        renderTable();
+        const keyword = document.getElementById('search').value.toLowerCase();
+
+        let filtered = orderData.filter(item => {
+            const matchDate = (() => {
+                if (!start && !end) return true;
+                const targetDate = item[dateType];
+                if (!targetDate) return false;
+                const afterStart = start ? targetDate >= start : true;
+                const beforeEnd = end ? targetDate <= end : true;
+                return afterStart && beforeEnd;
+            })();
+
+            const matchKeyword = (() => {
+                if (!keyword) return true;
+                const str = Object.values(item).join('').toLowerCase();
+                return str.includes(keyword);
+            })();
+
+            return matchDate && matchKeyword;
+        });
+
+        renderTable(filtered);
     };
+
+    // 重置
     document.getElementById('reset-btn').onclick = () => {
+        document.getElementById('search').value = '';
         document.getElementById('date-start').value = '';
         document.getElementById('date-end').value = '';
-        renderTable();
+        renderTable(orderData);
     };
 }
 
-// ==============================
-// 需求3：自动求和核心
-// ==============================
+// 应付求和
 function calcTotalPayable(show = false) {
     let total = 0;
     tempPayItems.forEach(i => total += parseFloat(i.amount) || 0);
@@ -388,9 +395,9 @@ function renderTempPayItems() {
         const div = document.createElement('div');
         div.className = 'pay-item-row';
         div.innerHTML = `
-            <input type="number" step="0.01" value="${item.amount}" 
+            <input type="number" step="0.01" value="${item.amount}"
                 onchange="tempPayItems[${index}].amount=parseFloat(this.value)||0;calcTotalPayable(true)">
-            <input type="text" value="${item.remark}" 
+            <input type="text" value="${item.remark}"
                 onchange="tempPayItems[${index}].remark=this.value">
             <button onclick="tempPayItems.splice(${index},1);renderTempPayItems();calcTotalPayable(true)">删除</button>
         `;
@@ -399,11 +406,20 @@ function renderTempPayItems() {
     calcTotalPayable(true);
 }
 
-// 轨迹记录
+// 轨迹 + 修复2：新增轨迹自动更新到【最新轨迹】栏
 document.getElementById('add-tracking-record').onclick = () => {
-    tempTrackingRecords.push({ time: new Date().toLocaleString().replace(/\//g, '-'), content: '' });
+    tempTrackingRecords.push({
+        time: new Date().toLocaleString().replace(/\//g, '-'),
+        content: ''
+    });
     renderTempTrackingRecords();
+
+    if (tempTrackingRecords.length > 0) {
+        const last = tempTrackingRecords[tempTrackingRecords.length - 1];
+        document.getElementById('form-tracking-status').value = last.content;
+    }
 };
+
 function renderTempTrackingRecords() {
     const c = document.getElementById('tracking-records-container');
     c.innerHTML = '';
@@ -412,11 +428,22 @@ function renderTempTrackingRecords() {
         div.className = 'tracking-record-row';
         div.innerHTML = `
             <input value="${item.time}" onchange="tempTrackingRecords[${index}].time=this.value">
-            <input value="${item.content}" onchange="tempTrackingRecords[${index}].content=this.value">
-            <button onclick="tempTrackingRecords.splice(${index},1);renderTempTrackingRecords()">删除</button>
+            <input value="${item.content}"
+                onchange="tempTrackingRecords[${index}].content=this.value;
+                if(${index} === tempTrackingRecords.length-1){
+                    document.getElementById('form-tracking-status').value = this.value;
+                }">
+            <button onclick="tempTrackingRecords.splice(${index},1);renderTempTrackingRecords();
+                if(tempTrackingRecords.length>0){
+                    document.getElementById('form-tracking-status').value = tempTrackingRecords.at(-1).content;
+                }">删除</button>
         `;
         c.appendChild(div);
     });
+
+    if (tempTrackingRecords.length > 0) {
+        document.getElementById('form-tracking-status').value = tempTrackingRecords.at(-1).content;
+    }
 }
 
 // 工具
