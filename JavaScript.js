@@ -1,11 +1,11 @@
 // ==============================================
-// 臻方供应链管理系统 - 终极修复：应付子项删除功能
-// 采用事件委托机制，彻底解决动态元素删除无效问题
+// 臻方供应链管理系统 - 终极终极修复：应付子项删除
+// 放弃事件委托，改用内联函数+全局数组，直接操作DOM
 // 其他所有功能 100% 保留
 // ==============================================
 let orderData = [];
 let currentEditIndex = -1;
-let tempPayItems = [];
+let tempPayItems = []; // 全局应付子项数组（直接操作）
 let tempTrackingRecords = [];
 
 // 初始化
@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function () {
     bindAllEvents();
     replaceCountryFilterWithDateFilter();
     convertInputsToTextarea();
-    bindPayItemDelegation(); // 绑定应付子项删除的事件委托
 });
 
 // 本地存储
@@ -161,11 +160,11 @@ function bindAllEvents() {
     // 添加订单
     document.getElementById('add-btn').onclick = () => {
         currentEditIndex = -1;
-        tempPayItems = [];
+        tempPayItems = []; // 重置全局应付子项
         tempTrackingRecords = [];
         document.getElementById('order-form').reset();
         document.getElementById('modal-title').textContent = '添加订单';
-        renderTempPayItems();
+        renderTempPayItems(); // 渲染空的应付子项容器
         renderTempTrackingRecords();
         convertInputsToTextarea();
         document.getElementById('order-modal').style.display = 'flex';
@@ -208,7 +207,7 @@ function bindAllEvents() {
             customs: document.getElementById('form-customs').value,
             remark: document.getElementById('form-remark').value,
             status: document.getElementById('form-status').value,
-            payItems: [...tempPayItems],
+            payItems: [...tempPayItems], // 直接取全局应付子项数组
             trackingRecords: [...tempTrackingRecords]
         };
 
@@ -226,7 +225,7 @@ function bindAllEvents() {
             const index = parseInt(e.target.closest('.edit-btn').dataset.index);
             currentEditIndex = index;
             const item = orderData[index];
-            tempPayItems = [...item.payItems];
+            tempPayItems = [...item.payItems]; // 赋值给全局应付子项数组
             tempTrackingRecords = [...item.trackingRecords];
 
             document.getElementById('form-customer').value = item.customer;
@@ -254,7 +253,7 @@ function bindAllEvents() {
             document.getElementById('form-remark').value = item.remark;
             document.getElementById('form-status').value = item.status;
 
-            renderTempPayItems();
+            renderTempPayItems(); // 渲染编辑时的应付子项
             renderTempTrackingRecords();
             convertInputsToTextarea();
             document.getElementById('modal-title').textContent = '编辑订单';
@@ -326,10 +325,10 @@ function bindAllEvents() {
     };
     document.getElementById('form-customer-pay').oninput = calcProfit;
 
-    // 应付子项 - 添加
+    // 应付子项 - 添加（直接操作全局数组）
     document.getElementById('add-pay-item').onclick = () => {
         tempPayItems.push({ amount: 0, remark: '' });
-        renderTempPayItems();
+        renderTempPayItems(); // 重新渲染
         calcTotalPayable(true);
     };
 
@@ -423,46 +422,6 @@ function bindAllEvents() {
     };
 }
 
-// ====================== 核心修复：应付子项事件委托（解决删除无效） ======================
-function bindPayItemDelegation() {
-    // 绑定到父容器，监听所有子项的删除按钮点击（动态元素也能捕获）
-    document.getElementById('pay-items-container').addEventListener('click', function(e) {
-        // 只处理删除按钮的点击
-        if (e.target.tagName === 'BUTTON' && e.target.textContent === '删除') {
-            // 找到当前点击按钮所在的子项行
-            const payItemRow = e.target.closest('.pay-item-row');
-            if (!payItemRow) return;
-            
-            // 获取当前子项的索引（通过父容器的子元素排序）
-            const allRows = Array.from(document.querySelectorAll('.pay-item-row'));
-            const index = allRows.indexOf(payItemRow);
-            
-            // 删除数组元素 + 重新渲染 + 重新计算金额
-            tempPayItems.splice(index, 1);
-            renderTempPayItems();
-            calcTotalPayable(true);
-        }
-    });
-
-    // 监听应付子项的金额和备注输入变化
-    document.getElementById('pay-items-container').addEventListener('input', function(e) {
-        const payItemRow = e.target.closest('.pay-item-row');
-        if (!payItemRow) return;
-        
-        const allRows = Array.from(document.querySelectorAll('.pay-item-row'));
-        const index = allRows.indexOf(payItemRow);
-        
-        // 根据输入框类型更新数据
-        if (e.target.type === 'number') {
-            tempPayItems[index].amount = parseFloat(e.target.value) || 0;
-        } else if (e.target.type === 'text') {
-            tempPayItems[index].remark = e.target.value.trim();
-        }
-        
-        calcTotalPayable(true);
-    });
-}
-
 // 应付求和
 function calcTotalPayable(show = false) {
     let total = 0;
@@ -471,24 +430,44 @@ function calcTotalPayable(show = false) {
     return total;
 }
 
-// 应付子项渲染（简化，只负责生成DOM，事件由委托处理）
+// ====================== 核心修复：应付子项渲染+删除（直接操作全局数组） ======================
 function renderTempPayItems() {
     const container = document.getElementById('pay-items-container');
     container.innerHTML = '';
+    
+    // 清空后重新生成所有子项（确保索引和数组一致）
     if (tempPayItems.length === 0) {
         container.innerHTML = '<p style="color: #999; margin: 8px 0; font-size: 14px;">暂无应付子项，点击"新增应付子项"添加</p>';
         return;
     }
-    tempPayItems.forEach((item) => {
+    
+    // 遍历全局数组，生成每个子项，内联函数直接操作全局数组
+    tempPayItems.forEach((item, index) => {
         const itemEl = document.createElement('div');
         itemEl.className = 'pay-item-row';
+        
+        // 关键：内联函数直接操作全局tempPayItems数组，无需委托
         itemEl.innerHTML = `
-            <input type="number" step="0.01" value="${item.amount}">
-            <input type="text" value="${item.remark}">
-            <button>删除</button>
+            <input type="number" step="0.01" value="${item.amount}" 
+                   oninput="tempPayItems[${index}].amount = parseFloat(this.value) || 0; calcTotalPayable(true)">
+            <input type="text" value="${item.remark}" 
+                   oninput="tempPayItems[${index}].remark = this.value.trim()">
+            <button onclick="deletePayItem(${index})">删除</button>
         `;
+        
         container.appendChild(itemEl);
     });
+    
+    calcTotalPayable(true);
+}
+
+// 全局删除函数（直接操作全局数组，100%生效）
+function deletePayItem(index) {
+    // 1. 从全局数组中删除对应索引的子项
+    tempPayItems.splice(index, 1);
+    // 2. 重新渲染所有子项（确保索引重新对齐）
+    renderTempPayItems();
+    // 3. 重新计算应付总金额
     calcTotalPayable(true);
 }
 
@@ -515,7 +494,7 @@ function renderTempTrackingRecords() {
 // 导出Excel核心函数
 function exportExcel() {
     const excelData = orderData.map(item => ({
-        '录单日期': item.warehouseIn,
+        '入仓日期': item.warehouseIn,
         '出仓日期': item.warehouseOut,
         '客户名称': item.customer,
         '订单编号': item.orderId,
@@ -566,3 +545,9 @@ function cutStr(str) {
     if (!str) return '';
     return str.length > 5 ? str.slice(0, 5) + '...' : str;
 }
+
+// 全局暴露函数（确保内联onclick能访问到）
+window.deletePayItem = deletePayItem;
+window.tempPayItems = tempPayItems;
+window.tempTrackingRecords = tempTrackingRecords;
+window.calcTotalPayable = calcTotalPayable;
