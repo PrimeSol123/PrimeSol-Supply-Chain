@@ -1,5 +1,6 @@
 // ==============================================
-// 臻方供应链管理系统 - 仅修复：应付子项删除按钮无效
+// 臻方供应链管理系统 - 终极修复：应付子项删除功能
+// 采用事件委托机制，彻底解决动态元素删除无效问题
 // 其他所有功能 100% 保留
 // ==============================================
 let orderData = [];
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
     bindAllEvents();
     replaceCountryFilterWithDateFilter();
     convertInputsToTextarea();
+    bindPayItemDelegation(); // 绑定应付子项删除的事件委托
 });
 
 // 本地存储
@@ -421,6 +423,46 @@ function bindAllEvents() {
     };
 }
 
+// ====================== 核心修复：应付子项事件委托（解决删除无效） ======================
+function bindPayItemDelegation() {
+    // 绑定到父容器，监听所有子项的删除按钮点击（动态元素也能捕获）
+    document.getElementById('pay-items-container').addEventListener('click', function(e) {
+        // 只处理删除按钮的点击
+        if (e.target.tagName === 'BUTTON' && e.target.textContent === '删除') {
+            // 找到当前点击按钮所在的子项行
+            const payItemRow = e.target.closest('.pay-item-row');
+            if (!payItemRow) return;
+            
+            // 获取当前子项的索引（通过父容器的子元素排序）
+            const allRows = Array.from(document.querySelectorAll('.pay-item-row'));
+            const index = allRows.indexOf(payItemRow);
+            
+            // 删除数组元素 + 重新渲染 + 重新计算金额
+            tempPayItems.splice(index, 1);
+            renderTempPayItems();
+            calcTotalPayable(true);
+        }
+    });
+
+    // 监听应付子项的金额和备注输入变化
+    document.getElementById('pay-items-container').addEventListener('input', function(e) {
+        const payItemRow = e.target.closest('.pay-item-row');
+        if (!payItemRow) return;
+        
+        const allRows = Array.from(document.querySelectorAll('.pay-item-row'));
+        const index = allRows.indexOf(payItemRow);
+        
+        // 根据输入框类型更新数据
+        if (e.target.type === 'number') {
+            tempPayItems[index].amount = parseFloat(e.target.value) || 0;
+        } else if (e.target.type === 'text') {
+            tempPayItems[index].remark = e.target.value.trim();
+        }
+        
+        calcTotalPayable(true);
+    });
+}
+
 // 应付求和
 function calcTotalPayable(show = false) {
     let total = 0;
@@ -429,7 +471,7 @@ function calcTotalPayable(show = false) {
     return total;
 }
 
-// ====================== 修复核心：应付子项删除逻辑 ======================
+// 应付子项渲染（简化，只负责生成DOM，事件由委托处理）
 function renderTempPayItems() {
     const container = document.getElementById('pay-items-container');
     container.innerHTML = '';
@@ -437,36 +479,16 @@ function renderTempPayItems() {
         container.innerHTML = '<p style="color: #999; margin: 8px 0; font-size: 14px;">暂无应付子项，点击"新增应付子项"添加</p>';
         return;
     }
-    tempPayItems.forEach((item, index) => {
+    tempPayItems.forEach((item) => {
         const itemEl = document.createElement('div');
         itemEl.className = 'pay-item-row';
-        
-        // 用全局函数绑定删除事件（解决删除无效问题）
         itemEl.innerHTML = `
-            <input type="number" step="0.01" value="${item.amount}" oninput="updatePayItemAmount(${index}, this.value)">
-            <input type="text" value="${item.remark}" oninput="updatePayItemRemark(${index}, this.value)">
-            <button onclick="deletePayItem(${index})">删除</button>
+            <input type="number" step="0.01" value="${item.amount}">
+            <input type="text" value="${item.remark}">
+            <button>删除</button>
         `;
         container.appendChild(itemEl);
     });
-    calcTotalPayable(true);
-}
-
-// 应付子项金额更新函数
-function updatePayItemAmount(index, value) {
-    tempPayItems[index].amount = parseFloat(value) || 0;
-    calcTotalPayable(true);
-}
-
-// 应付子项备注更新函数
-function updatePayItemRemark(index, value) {
-    tempPayItems[index].remark = value.trim();
-}
-
-// 应付子项删除函数（核心修复）
-function deletePayItem(index) {
-    tempPayItems.splice(index, 1);
-    renderTempPayItems();
     calcTotalPayable(true);
 }
 
@@ -493,7 +515,7 @@ function renderTempTrackingRecords() {
 // 导出Excel核心函数
 function exportExcel() {
     const excelData = orderData.map(item => ({
-        '入仓日期': item.warehouseIn,
+        '录单日期': item.warehouseIn,
         '出仓日期': item.warehouseOut,
         '客户名称': item.customer,
         '订单编号': item.orderId,
